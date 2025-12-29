@@ -83,7 +83,15 @@
     <script>
         let isRunning = false;
         let foundCodes = [];
-        const API_URL = 'http://45.141.26.246:5000';
+        
+        // ตรวจสอบว่าเว็บเป็น HTTPS หรือ HTTP
+        const isHTTPS = window.location.protocol === 'https:';
+        
+        // ถ้าเป็น HTTPS จะไม่สามารถเรียก HTTP API ได้
+        // ต้องใช้ HTTPS API หรือใช้ Proxy
+        const API_URL = isHTTPS 
+            ? 'https://your-https-api.com'  // ⚠️ ต้องเปลี่ยนเป็น HTTPS URL จริง
+            : 'http://45.141.26.246:5000';
 
         // ป้องกันการ debug
         (function() {
