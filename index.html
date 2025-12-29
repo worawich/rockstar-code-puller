@@ -1,1 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rockstar Games - Auto Code Puller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes pulse-once {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-once {
+            animation: pulse-once 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <div class="bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-6">
+                <h1 class="text-3xl font-bold">🎮 Rockstar Games - Auto Code Puller</h1>
+                <p class="text-purple-100 mt-2">ดึงโค้ดยืนยันตัวตนอัตโนมัติ </p>
+            </div>
 
+            <!-- Form -->
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">📧 กรอกอีเมลของคุณ</label>
+                    <input type="email" id="email" placeholder="example@outlook.com"
+                        class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-lg"
+                        onkeypress="if(event.key==='Enter') startPulling()">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="startPulling()" id="startBtn"
+                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-4 rounded-lg font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                        <span id="btnText">🚀 เริ่มดึงโค้ด</span>
+                    </button>
+                    <button onclick="clearAll()"
+                        class="bg-gray-700 hover:bg-gray-600 px-6 py-4 rounded-lg font-bold transition-all">
+                        🗑️ ล้าง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Code Display Container (แสดงหลายโค้ด) -->
+            <div id="codeContainer" class="hidden mx-6 mb-6 space-y-3 max-h-96 overflow-y-auto">
+                <!-- โค้ดที่ค้นพบจะแสดงที่นี่ แบบโค้ดล่าสุดอยู่ด้านบน -->
+            </div>
+
+            <!-- Status Display -->
+            <div id="statusDisplay" class="hidden mx-6 mb-6 bg-purple-900/30 border-2 border-purple-500 rounded-lg p-4">
+                <p class="text-purple-300 font-medium" id="statusText"></p>
+            </div>
+
+            <!-- Error Display -->
+            <div id="errorDisplay" class="hidden mx-6 mb-6 bg-red-900/30 border-2 border-red-500 rounded-lg p-4">
+                <p class="text-red-300 font-medium" id="errorText"></p>
+            </div>
+
+            <!-- Instructions -->
+            <div class="bg-gray-900/50 p-6 border-t border-gray-700">
+                <h3 class="font-bold mb-3">ℹ️ วิธีการใช้งาน</h3>
+                <ol class="space-y-2 text-sm text-gray-300">
+                    <li>1. กรอกอีเมลของคุณในช่องด้านบน</li>
+                    <li>2. คลิกปุ่ม "เริ่มดึงโค้ด"</li>
+                    <li>3. รอระบบค้นหาโค้ดยืนยันตัวตนจากกล่องจดหมาย</li>
+                    <li>4. เมื่อพบโค้ด จะแสดงเป็นขั้นๆ โค้ดล่าสุดอยู่ด้านบน</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="text-center mt-6 text-gray-400 text-sm">
+            <p>🔒 ข้อมูลของคุณปลอดภัย 100%</p>
+            <p>⚡ ระบบทำงานแบบอัตโนมัติ</p>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let foundCodes = [];
+        const API_URL = 'http://45.141.26.246:5000';
+
+        // ป้องกันการ debug
+        (function() {
+            setInterval(function() {
+                console.clear();
+            }, 100);
+        })();
+
+        function showStatus(message, type = 'info') {
+            const statusDisplay = document.getElementById('statusDisplay');
+            const statusText = document.getElementById('statusText');
+            const errorDisplay = document.getElementById('errorDisplay');
+            const errorText = document.getElementById('errorText');
+
+            if (type === 'error') {
+                errorDisplay.classList.remove('hidden');
+                errorText.textContent = message;
+                statusDisplay.classList.add('hidden');
+            } else {
+                statusDisplay.classList.remove('hidden');
+                statusText.textContent = message;
+                errorDisplay.classList.add('hidden');
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('email').value = '';
+            document.getElementById('codeContainer').classList.add('hidden');
+            document.getElementById('codeContainer').innerHTML = '';
+            document.getElementById('statusDisplay').classList.add('hidden');
+            document.getElementById('errorDisplay').classList.add('hidden');
+            foundCodes = [];
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code);
+            showStatus('📋 คัดลอกโค้ดแล้ว: ' + code, 'info');
+        }
+
+        function addCodeToDisplay(code, time, isNew, appendToBottom = false) {
+            foundCodes.unshift({ code, time, isNew });
+            
+            const container = document.getElementById('codeContainer');
+            container.classList.remove('hidden');
+            
+            const codeElement = document.createElement('div');
+            
+            // ถ้าเป็นเมลใหม่ใช้สีเขียว ถ้าเมลเก่าใช้สีน้ำเงิน
+            if (isNew) {
+                codeElement.className = 'bg-green-900/30 border-2 border-green-500 rounded-lg p-6 animate-pulse-once';
+                codeElement.innerHTML = `
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-green-400 mb-2">✅ พบโค้ดแล้ว!</h3>
+                            <p class="text-5xl font-mono font-bold text-green-300">${code}</p>
+                            <p class="text-sm text-green-200 mt-2">📅 ${time} (เมลใหม่)</p>
+                        </div>
+                        <button onclick="copyCode('${code}')"
+                            class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2">
+                            📋 คัดลอก
+                        </button>
+                    </div>
+                `;
+            } else {
+                codeElement.className = 'bg-blue-900/30 border-2 border-blue-500 rounded-lg p-6 animate-pulse-once';
+                codeElement.innerHTML = `
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-blue-400 mb-2">✅ พบโค้ดแล้ว!</h3>
+                            <p class="text-5xl font-mono font-bold text-blue-300">${code}</p>
+                            <p class="text-sm text-blue-200 mt-2">📅 ${time} (เมลเก่า)</p>
+                        </div>
+                        <button onclick="copyCode('${code}')"
+                            class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2">
+                            📋 คัดลอก
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // เพิ่มโค้ดที่ด้านล่างเสมอ เพื่อให้ backend ส่งจากใหม่ไปเก่า แล้วแสดงถูกลำดับ
+            container.appendChild(codeElement);
+        }
+
+        async function startPulling() {
+            if (isRunning) return;
+
+            const email = document.getElementById('email').value.trim();
+
+            if (!email) {
+                showStatus('❌ กรุณากรอกอีเมล!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            
+            // ล้างโค้ดเก่าทั้งหมดก่อนค้นหาใหม่
+            document.getElementById('codeContainer').classList.add('hidden');
+            document.getElementById('codeContainer').innerHTML = '';
+            foundCodes = [];
+            
+            const startBtn = document.getElementById('startBtn');
+            const btnText = document.getElementById('btnText');
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                showStatus(`🔍 กำลังค้นหาโค้ดของ ${email}...`, 'info');
+
+                // เรียก API ที่ทำทุกอย่างใน backend (ซ่อนข้อมูลทั้งหมด)
+                const response = await fetch(`${API_URL}/api/pull-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = JSON.parse(line.slice(6));
+                            
+                            if (data.type === 'status') {
+                                showStatus(data.message, 'info');
+                            } else if (data.type === 'old_code') {
+                                // แยกข้อมูลจาก message
+                                const message = data.message;
+                                const codeMatch = message.match(/พบโค้ดเก่า:\s*(\d+)/);
+                                const timeMatch = message.match(/มาแล้ว\s+([^)]+)\)/);
+                                
+                                if (codeMatch && timeMatch) {
+                                    const oldCode = codeMatch[1];
+                                    const oldTime = timeMatch[1];
+                                    addCodeToDisplay(oldCode, `ผ่านไปแล้ว ${oldTime}`, false, true);
+                                }
+                                
+                                const waitingMsg = message.includes('กำลังรอโค้ดใหม่') ? '🔄 กำลังรอโค้ดใหม่...' : data.message;
+                                showStatus(waitingMsg, 'info');
+                            } else if (data.type === 'all_codes') {
+                                // รับโค้ดทั้งหมดมาพร้อมกัน
+                                const codes = data.codes || [];
+                                codes.forEach(codeData => {
+                                    addCodeToDisplay(codeData.code, codeData.time, codeData.is_new, false);
+                                });
+                                document.getElementById('statusDisplay').classList.add('hidden');
+                                
+                                // คัดลอกโค้ดล่าสุด
+                                if (codes.length > 0) {
+                                    try {
+                                        await navigator.clipboard.writeText(codes[0].code);
+                                    } catch {}
+                                }
+                                
+                                isRunning = false;
+                                startBtn.disabled = false;
+                                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
+                                return;
+                            } else if (data.type === 'code') {
+                                // เพิ่มโค้ดใหม่เข้าไปในการแสดงผล (ที่ด้านบนสุด)
+                                addCodeToDisplay(data.code, data.time, data.is_new, false);
+                                document.getElementById('statusDisplay').classList.add('hidden');
+
+                                // คัดลอกโค้ดล่าสุดไปยังคลิปบอร์ด
+                                try {
+                                    await navigator.clipboard.writeText(data.code);
+                                } catch {}
+                                
+                                // ไม่ return ที่นี่ เพื่อให้ดึงโค้ดต่อไป
+                                // isRunning = false;
+                                // startBtn.disabled = false;
+                                // startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                // btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
+                                // return;
+                            } else if (data.type === 'complete') {
+                                // เมื่อดึงโค้ดครบแล้ว
+                                document.getElementById('statusDisplay').classList.add('hidden');
+                                isRunning = false;
+                                startBtn.disabled = false;
+                                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
+                                return;
+                            } else if (data.type === 'error') {
+                                showStatus(data.message, 'error');
+                                isRunning = false;
+                                startBtn.disabled = false;
+                                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
+                                return;
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                showStatus(`❌ เกิดข้อผิดพลาด: ${error.message}`, 'error');
+            } finally {
+                isRunning = false;
+                startBtn.disabled = false;
+                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
+            }
+        }
+    </script>
+</body>
+</html>
