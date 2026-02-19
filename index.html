@@ -47,9 +47,8 @@
                 </div>
             </div>
 
-            <!-- Code Display Container (แสดงหลายโค้ด) -->
+            <!-- Code Display Container -->
             <div id="codeContainer" class="hidden mx-6 mb-6 space-y-3 max-h-96 overflow-y-auto">
-                <!-- โค้ดที่ค้นพบจะแสดงที่นี่ แบบโค้ดล่าสุดอยู่ด้านบน -->
             </div>
 
             <!-- Status Display -->
@@ -76,21 +75,17 @@
 
         <div class="text-center mt-6 text-gray-400 text-sm">
             <p>🔒 ข้อมูลของคุณปลอดภัย 100%</p>
-            <p>🌐 เชื่อมต่อกับ Server: 45.141.26.246</p>
+            <p>🌐 เชื่อมต่อกับ Server: 141.98.17.64</p>
         </div>
     </div>
 
     <script>
         let isRunning = false;
         let foundCodes = [];
-        const API_URL = 'http://45.141.26.246:8080';
 
-        // ป้องกันการ debug
-        (function() {
-            setInterval(function() {
-                console.clear();
-            }, 100);
-        })();
+        // ⚠️ เปลี่ยนเป็น HTTPS เพื่อให้ใช้งานได้บน GitHub Pages
+        // ถ้า server ยังไม่มี SSL ให้ติดตั้ง Cloudflare Tunnel หรือ Nginx + Let's Encrypt
+        const API_URL = 'https://141.98.17.64:9011';
 
         function showStatus(message, type = 'info') {
             const statusDisplay = document.getElementById('statusDisplay');
@@ -123,15 +118,14 @@
             showStatus('📋 คัดลอกโค้ดแล้ว: ' + code, 'info');
         }
 
-        function addCodeToDisplay(code, time, isNew, appendToBottom = false) {
+        function addCodeToDisplay(code, time, isNew) {
             foundCodes.unshift({ code, time, isNew });
-            
+
             const container = document.getElementById('codeContainer');
             container.classList.remove('hidden');
-            
+
             const codeElement = document.createElement('div');
-            
-            // ถ้าเป็นเมลใหม่ใช้สีเขียว ถ้าเมลเก่าใช้สีน้ำเงิน
+
             if (isNew) {
                 codeElement.className = 'bg-green-900/30 border-2 border-green-500 rounded-lg p-6 animate-pulse-once';
                 codeElement.innerHTML = `
@@ -163,8 +157,7 @@
                     </div>
                 `;
             }
-            
-            // เพิ่มโค้ดที่ด้านล่างเสมอ เพื่อให้ backend ส่งจากใหม่ไปเก่า แล้วแสดงถูกลำดับ
+
             container.appendChild(codeElement);
         }
 
@@ -179,12 +172,11 @@
             }
 
             isRunning = true;
-            
-            // ล้างโค้ดเก่าทั้งหมดก่อนค้นหาใหม่
+
             document.getElementById('codeContainer').classList.add('hidden');
             document.getElementById('codeContainer').innerHTML = '';
             foundCodes = [];
-            
+
             const startBtn = document.getElementById('startBtn');
             const btnText = document.getElementById('btnText');
             startBtn.disabled = true;
@@ -193,7 +185,6 @@
             try {
                 showStatus(`🔍 กำลังค้นหาโค้ดของ ${email}...`, 'info');
 
-                // เรียก API ที่ทำทุกอย่างใน backend (ซ่อนข้อมูลทั้งหมด)
                 const response = await fetch(`${API_URL}/api/pull-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -215,61 +206,43 @@
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const data = JSON.parse(line.slice(6));
-                            
+
                             if (data.type === 'status') {
                                 showStatus(data.message, 'info');
                             } else if (data.type === 'old_code') {
-                                // แยกข้อมูลจาก message
                                 const message = data.message;
                                 const codeMatch = message.match(/พบโค้ดเก่า:\s*(\d+)/);
                                 const timeMatch = message.match(/มาแล้ว\s+([^)]+)\)/);
-                                
+
                                 if (codeMatch && timeMatch) {
                                     const oldCode = codeMatch[1];
                                     const oldTime = timeMatch[1];
-                                    addCodeToDisplay(oldCode, `ผ่านไปแล้ว ${oldTime}`, false, true);
+                                    addCodeToDisplay(oldCode, `ผ่านไปแล้ว ${oldTime}`, false);
                                 }
-                                
+
                                 const waitingMsg = message.includes('กำลังรอโค้ดใหม่') ? '🔄 กำลังรอโค้ดใหม่...' : data.message;
                                 showStatus(waitingMsg, 'info');
                             } else if (data.type === 'all_codes') {
-                                // รับโค้ดทั้งหมดมาพร้อมกัน
                                 const codes = data.codes || [];
                                 codes.forEach(codeData => {
-                                    addCodeToDisplay(codeData.code, codeData.time, codeData.is_new, false);
+                                    addCodeToDisplay(codeData.code, codeData.time, codeData.is_new);
                                 });
                                 document.getElementById('statusDisplay').classList.add('hidden');
-                                
-                                // คัดลอกโค้ดล่าสุด
+
                                 if (codes.length > 0) {
-                                    try {
-                                        await navigator.clipboard.writeText(codes[0].code);
-                                    } catch {}
+                                    try { await navigator.clipboard.writeText(codes[0].code); } catch {}
                                 }
-                                
+
                                 isRunning = false;
                                 startBtn.disabled = false;
                                 startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                                 btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
                                 return;
                             } else if (data.type === 'code') {
-                                // เพิ่มโค้ดใหม่เข้าไปในการแสดงผล (ที่ด้านบนสุด)
-                                addCodeToDisplay(data.code, data.time, data.is_new, false);
+                                addCodeToDisplay(data.code, data.time, data.is_new);
                                 document.getElementById('statusDisplay').classList.add('hidden');
-
-                                // คัดลอกโค้ดล่าสุดไปยังคลิปบอร์ด
-                                try {
-                                    await navigator.clipboard.writeText(data.code);
-                                } catch {}
-                                
-                                // ไม่ return ที่นี่ เพื่อให้ดึงโค้ดต่อไป
-                                // isRunning = false;
-                                // startBtn.disabled = false;
-                                // startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                                // btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
-                                // return;
+                                try { await navigator.clipboard.writeText(data.code); } catch {}
                             } else if (data.type === 'complete') {
-                                // เมื่อดึงโค้ดครบแล้ว
                                 document.getElementById('statusDisplay').classList.add('hidden');
                                 isRunning = false;
                                 startBtn.disabled = false;
