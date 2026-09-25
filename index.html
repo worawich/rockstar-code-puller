@@ -93,22 +93,6 @@
                 </div>
 
                 <div id="inboxView" class="p-6 space-y-4">
-                    <div id="mailViewer" class="hidden rounded-xl border border-purple-500/30 bg-gray-900/50 overflow-hidden">
-                        <div class="flex items-start justify-between gap-3 border-b border-gray-700 p-4">
-                            <div class="min-w-0">
-                                <h3 id="viewerSubject" class="text-lg font-semibold"></h3>
-                                <p id="viewerFrom" class="text-sm text-gray-300 mt-1"></p>
-                                <p id="viewerDate" class="text-sm text-gray-400"></p>
-                            </div>
-                            <button onclick="closeMail()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm font-bold" data-i18n="close">
-                                Close
-                            </button>
-                        </div>
-                        <div id="viewerLoading" class="hidden p-6 text-purple-300" data-i18n="loadingMessage">Loading message...</div>
-                        <iframe id="viewerFrame" title="Mail content" class="w-full bg-white min-h-[320px]"
-                            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
-                    </div>
-
                     <div class="overflow-x-auto rounded-xl border border-gray-700">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-gray-900/70 text-gray-300">
@@ -160,6 +144,28 @@
                     <li data-i18n="howTo5">5. Open the Rockstar codes tab only when you need a verification code</li>
                 </ol>
             </div>
+        </div>
+    </div>
+
+    <div id="mailModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeMail()"></div>
+        <div class="relative z-10 flex w-full max-w-5xl max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-purple-500/40 bg-gray-900 shadow-2xl">
+            <div class="flex items-start justify-between gap-3 border-b border-gray-700 bg-gradient-to-r from-purple-700 to-pink-600 p-4 sm:p-5">
+                <div class="min-w-0 flex-1">
+                    <h3 id="viewerSubject" class="text-lg sm:text-xl font-bold leading-snug"></h3>
+                    <p id="viewerFrom" class="text-sm text-purple-100 mt-1 truncate"></p>
+                    <p id="viewerDate" class="text-xs sm:text-sm text-purple-200/90"></p>
+                </div>
+                <button type="button" onclick="closeMail()"
+                    class="shrink-0 rounded-lg bg-black/30 hover:bg-black/50 px-3 py-2 text-sm font-bold"
+                    data-i18n="close">
+                    Close
+                </button>
+            </div>
+            <div id="viewerLoading" class="hidden p-8 text-center text-purple-300" data-i18n="loadingMessage">Loading message...</div>
+            <iframe id="viewerFrame" title="Mail content"
+                class="w-full flex-1 bg-white min-h-[55vh] sm:min-h-[65vh]"
+                sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
         </div>
     </div>
 
@@ -548,7 +554,8 @@
 
         function closeMail() {
             lastViewerItem = null;
-            document.getElementById("mailViewer").classList.add("hidden");
+            document.getElementById("mailModal").classList.add("hidden");
+            document.body.classList.remove("overflow-hidden");
             document.getElementById("viewerFrame").srcdoc = "";
         }
 
@@ -557,11 +564,11 @@
             if (!item || !session) return;
 
             lastViewerItem = item;
-            document.getElementById("mailViewer").classList.remove("hidden");
+            document.getElementById("mailModal").classList.remove("hidden");
+            document.body.classList.add("overflow-hidden");
             fillViewerHeader(item);
             document.getElementById("viewerLoading").classList.remove("hidden");
             document.getElementById("viewerFrame").srcdoc = "";
-            document.getElementById("mailViewer").scrollIntoView({ behavior: "smooth", block: "start" });
 
             try {
                 const mail = await apiPost("/mail", {
@@ -588,6 +595,10 @@ a { color: #6d28d9; }
                 document.getElementById("viewerLoading").classList.add("hidden");
             }
         }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeMail();
+        });
 
         function clearCodes() {
             document.getElementById("codeContainer").classList.add("hidden");

@@ -1,4 +1,4 @@
-const API_ORIGIN = "http://141.98.17.64:8001";
+const API_ORIGIN = "http://api.okzc.xyz:8001";
 
 export default {
   async fetch(request) {
