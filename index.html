@@ -5,15 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Outlook / Hotmail Mail Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes pulse-once {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse-once { animation: pulse-once 0.5s ease-in-out; }
-    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white min-h-screen">
     <div class="fixed top-4 right-4 z-50 flex rounded-lg bg-gray-900/80 border border-purple-500/40 p-1 backdrop-blur">
@@ -33,7 +24,7 @@
         <div class="bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden">
             <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-6">
                 <h1 class="text-3xl font-bold" data-i18n="title">Outlook / Hotmail Mail Reader</h1>
-                <p class="text-purple-100 mt-2" data-i18n="subtitle">Sign in to read every message, or pull Rockstar codes</p>
+                <p class="text-purple-100 mt-2" data-i18n="subtitle">Sign in to read every message</p>
             </div>
 
             <div id="loginPanel" class="p-6 space-y-5">
@@ -81,17 +72,6 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-1 mx-6 mt-4 rounded-lg bg-gray-900/70 p-1">
-                    <button type="button" id="viewInboxBtn" onclick="setAppView('inbox')"
-                        class="rounded-md px-3 py-2 text-sm font-semibold bg-purple-600" data-i18n="inbox">
-                        Inbox
-                    </button>
-                    <button type="button" id="viewCodesBtn" onclick="setAppView('codes')"
-                        class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300" data-i18n="rockstarTab">
-                        Rockstar codes
-                    </button>
-                </div>
-
                 <div id="inboxView" class="p-6 space-y-4">
                     <div class="overflow-x-auto rounded-xl border border-gray-700">
                         <table class="w-full text-left text-sm">
@@ -112,19 +92,6 @@
                         Load more
                     </button>
                 </div>
-
-                <div id="codesView" class="hidden p-6 space-y-4">
-                    <div class="flex gap-3">
-                        <button onclick="startPulling()" id="startBtn"
-                            class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-4 rounded-lg font-bold text-lg transition-all">
-                            <span id="btnText" data-i18n="pullCodes">Pull codes</span>
-                        </button>
-                        <button onclick="clearCodes()" class="bg-gray-700 hover:bg-gray-600 px-6 py-4 rounded-lg font-bold" data-i18n="clear">
-                            Clear
-                        </button>
-                    </div>
-                    <div id="codeContainer" class="hidden space-y-3 max-h-96 overflow-y-auto"></div>
-                </div>
             </div>
 
             <div id="statusDisplay" class="hidden mx-6 mb-6 bg-purple-900/30 border-2 border-purple-500 rounded-lg p-4">
@@ -141,7 +108,6 @@
                     <li data-i18n="howTo2">2. Wait for your inbox to load. You will see sender, subject, and date</li>
                     <li data-i18n="howTo3">3. Click any email to open and read the full message</li>
                     <li data-i18n="howTo4">4. Press Load more if you want older emails, or Refresh to get the latest</li>
-                    <li data-i18n="howTo5">5. Open the Rockstar codes tab only when you need a verification code</li>
                 </ol>
             </div>
         </div>
@@ -173,20 +139,12 @@
         const API_URL = (location.protocol === "https:" && /^(www\.)?okzc\.xyz$/i.test(location.hostname))
             ? "/api"
             : "http://141.98.17.64:8001";
-        const OTP_REGEX = /\b(?!000000|111111|222222|333333|444444|555555|666666|777777|888888|999999)\d{6}\b/g;
-        const ROCKSTAR_KEYWORDS = [
-            "verification code", "verify", "security code", "authentication code",
-            "your rockstar games", "código de verificação", "código de verificación",
-            "code de vérification", "bestätigungscode", "код подтверждения",
-            "código", "codigo", "code", "รหัสยืนยัน",
-        ];
-        const MAX_MINUTES = 30;
         const PAGE_SIZE = 20;
 
         const I18N = {
             en: {
                 title: "Outlook / Hotmail Mail Reader",
-                subtitle: "Sign in to read every message, or pull Rockstar codes",
+                subtitle: "Sign in to read every message",
                 emailLabel: "Email",
                 passwordLabel: "Password",
                 passwordPlaceholder: "Mailbox password",
@@ -195,22 +153,17 @@
                 signedIn: "Signed in",
                 refresh: "Refresh",
                 signOut: "Sign out",
-                inbox: "Inbox",
-                rockstarTab: "Rockstar codes",
                 close: "Close",
                 loadingMessage: "Loading message...",
                 from: "From",
                 subject: "Subject",
                 date: "Date",
                 loadMore: "Load more",
-                pullCodes: "Pull codes",
-                clear: "Clear",
                 howToTitle: "How to use",
                 howTo1: "1. Enter your email and password, then press Login",
                 howTo2: "2. Wait for your inbox to load. You will see sender, subject, and date",
                 howTo3: "3. Click any email to open and read the full message",
                 howTo4: "4. Press Load more if you want older emails, or Refresh to get the latest",
-                howTo5: "5. Open the Rockstar codes tab only when you need a verification code",
                 emptyInbox: "No messages in this inbox",
                 noSubject: "(No Subject)",
                 unknownSender: "(Unknown)",
@@ -225,22 +178,10 @@
                 loadingInbox: "Loading inbox...",
                 noContent: "No content",
                 readFailed: "Could not read this message: {error}",
-                copied: "Copied code: {code}",
-                codeFound: "Code found!",
-                newMail: "new mail",
-                oldMail: "older mail",
-                copy: "Copy",
-                searchingCodes: "Searching codes for {email}...",
-                readingMail: "Reading mail: {subject}",
-                noCodes: "No codes found in the last 30 minutes",
-                errorPrefix: "Error: {error}",
-                justNow: "just now",
-                minutesAgo: "{n} minutes ago",
-                hoursAgo: "{n} hours ago",
             },
             th: {
                 title: "อ่านเมล Outlook / Hotmail",
-                subtitle: "ล็อกอินแล้วอ่านข้อความเมลทั้งหมด หรือดึงโค้ด Rockstar",
+                subtitle: "ล็อกอินแล้วอ่านข้อความเมลทั้งหมด",
                 emailLabel: "อีเมล",
                 passwordLabel: "รหัสผ่าน",
                 passwordPlaceholder: "รหัสผ่านเมล",
@@ -249,22 +190,17 @@
                 signedIn: "เข้าสู่ระบบแล้ว",
                 refresh: "รีเฟรช",
                 signOut: "ออกจากระบบ",
-                inbox: "กล่องจดหมาย",
-                rockstarTab: "ดึงโค้ด Rockstar",
                 close: "ปิด",
                 loadingMessage: "กำลังโหลดข้อความ...",
                 from: "จาก",
                 subject: "หัวข้อ",
                 date: "วันที่",
                 loadMore: "โหลดเพิ่ม",
-                pullCodes: "เริ่มดึงโค้ด",
-                clear: "ล้าง",
                 howToTitle: "วิธีใช้",
                 howTo1: "1. กรอกอีเมลและรหัสผ่าน แล้วกดเข้าสู่ระบบ",
                 howTo2: "2. รอกล่องจดหมายโหลด จะเห็นผู้ส่ง หัวข้อ และวันที่",
                 howTo3: "3. คลิกเมลที่ต้องการ เพื่อเปิดอ่านข้อความเต็ม",
                 howTo4: "4. กดโหลดเพิ่มถ้าอยากดูเมลเก่า หรือกดรีเฟรชเพื่อดึงเมลล่าสุด",
-                howTo5: "5. เปิดแท็บดึงโค้ด Rockstar เฉพาะตอนที่ต้องการโค้ดยืนยัน",
                 emptyInbox: "ไม่พบข้อความในกล่องจดหมาย",
                 noSubject: "(ไม่มีหัวข้อ)",
                 unknownSender: "(ไม่ทราบผู้ส่ง)",
@@ -279,24 +215,11 @@
                 loadingInbox: "กำลังโหลดกล่องจดหมาย...",
                 noContent: "ไม่มีเนื้อหา",
                 readFailed: "อ่านเมลไม่สำเร็จ: {error}",
-                copied: "คัดลอกโค้ดแล้ว: {code}",
-                codeFound: "พบโค้ดแล้ว!",
-                newMail: "เมลใหม่",
-                oldMail: "เมลเก่า",
-                copy: "คัดลอก",
-                searchingCodes: "กำลังค้นหาโค้ดของ {email}...",
-                readingMail: "กำลังอ่านเมล: {subject}",
-                noCodes: "ยังไม่พบโค้ดใน 30 นาทีล่าสุด",
-                errorPrefix: "เกิดข้อผิดพลาด: {error}",
-                justNow: "เมื่อสักครู่",
-                minutesAgo: "{n} นาทีที่แล้ว",
-                hoursAgo: "{n} ชั่วโมงที่แล้ว",
             },
         };
 
         let lang = localStorage.getItem("mailReaderLang") === "th" ? "th" : "en";
         let session = null;
-        let isRunning = false;
         let mailPage = 1;
         let mailItems = [];
         let mailTotal = 0;
@@ -326,13 +249,8 @@
             document.getElementById("langThBtn").className =
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold " + (lang === "th" ? "bg-purple-600" : "text-gray-300");
             if (session) {
-                const inboxHidden = document.getElementById("inboxView").classList.contains("hidden");
-                setAppView(inboxHidden ? "codes" : "inbox");
                 renderMailList();
                 if (lastViewerItem) fillViewerHeader(lastViewerItem);
-            }
-            if (!isRunning) {
-                document.getElementById("btnText").textContent = t("pullCodes");
             }
             if (!document.getElementById("loginBtn").disabled) {
                 document.getElementById("loginBtnText").textContent = t("login");
@@ -343,15 +261,6 @@
             lang = next === "th" ? "th" : "en";
             localStorage.setItem("mailReaderLang", lang);
             applyLanguage();
-        }
-
-        function setAppView(view) {
-            document.getElementById("inboxView").classList.toggle("hidden", view !== "inbox");
-            document.getElementById("codesView").classList.toggle("hidden", view !== "codes");
-            document.getElementById("viewInboxBtn").className =
-                "rounded-md px-3 py-2 text-sm font-semibold " + (view === "inbox" ? "bg-purple-600" : "text-gray-300");
-            document.getElementById("viewCodesBtn").className =
-                "rounded-md px-3 py-2 text-sm font-semibold " + (view === "codes" ? "bg-purple-600" : "text-gray-300");
         }
 
         function getCredentials() {
@@ -374,48 +283,6 @@
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;");
-        }
-
-        function stripHtml(text) {
-            return String(text || "")
-                .replace(/<[^>]*>/g, " ")
-                .replace(/&nbsp;/g, " ")
-                .replace(/&amp;/g, "&")
-                .replace(/&lt;/g, "<")
-                .replace(/&gt;/g, ">")
-                .replace(/&quot;/g, '"')
-                .replace(/\s+/g, " ")
-                .trim();
-        }
-
-        function isRockstarMail(sender, subject, body) {
-            const haystack = `${sender} ${subject} ${body}`.toLowerCase();
-            const fromRockstar =
-                sender.toLowerCase().includes("rockstargames.com") ||
-                sender.toLowerCase().includes("rockstar") ||
-                haystack.includes("rockstar games");
-            if (!fromRockstar) return false;
-            OTP_REGEX.lastIndex = 0;
-            return ROCKSTAR_KEYWORDS.some((keyword) => haystack.includes(keyword)) || OTP_REGEX.test(haystack);
-        }
-
-        function extractOtp(text) {
-            OTP_REGEX.lastIndex = 0;
-            const matches = stripHtml(text).match(OTP_REGEX);
-            if (!matches || !matches.length) return null;
-            for (const code of matches) {
-                const idx = text.toLowerCase().indexOf(code);
-                const context = text.toLowerCase().slice(Math.max(0, idx - 50), idx + 50);
-                if (!context.includes("example")) return code;
-            }
-            return matches[0];
-        }
-
-        function relativeTime(date) {
-            const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
-            if (minutes < 1) return t("justNow");
-            if (minutes < 60) return t("minutesAgo", { n: minutes });
-            return t("hoursAgo", { n: Math.floor(minutes / 60) });
         }
 
         function formatDate(value) {
@@ -463,13 +330,11 @@
             document.getElementById("loginPanel").classList.add("hidden");
             document.getElementById("appPanel").classList.remove("hidden");
             document.getElementById("loggedEmail").textContent = credentials.email;
-            setAppView("inbox");
             refreshInbox();
         }
 
         function logout() {
             session = null;
-            isRunning = false;
             mailPage = 1;
             mailItems = [];
             mailTotal = 0;
@@ -477,7 +342,6 @@
             document.getElementById("loginPanel").classList.remove("hidden");
             document.getElementById("appPanel").classList.add("hidden");
             closeMail();
-            clearCodes();
             hideAlerts();
         }
 
@@ -507,7 +371,10 @@
             document.getElementById("mailCount").textContent = mailTotal
                 ? t("showingCount", { shown: mailItems.length, total: mailTotal })
                 : "";
-            document.getElementById("loadMoreBtn").classList.toggle("hidden", mailItems.length >= mailTotal || !mailItems.length);
+            document.getElementById("loadMoreBtn").classList.toggle(
+                "hidden",
+                mailItems.length >= mailTotal || !mailItems.length,
+            );
         }
 
         async function loadMails(page, append) {
@@ -596,54 +463,6 @@ a { color: #6d28d9; }
             }
         }
 
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape") closeMail();
-        });
-
-        function clearCodes() {
-            document.getElementById("codeContainer").classList.add("hidden");
-            document.getElementById("codeContainer").innerHTML = "";
-            hideAlerts();
-        }
-
-        function copyCode(code) {
-            navigator.clipboard.writeText(code);
-            showStatus(t("copied", { code }));
-        }
-
-        function addCodeToDisplay(code, time, isNew) {
-            const container = document.getElementById("codeContainer");
-            container.classList.remove("hidden");
-            const el = document.createElement("div");
-            const label = isNew ? t("newMail") : t("oldMail");
-            if (isNew) {
-                el.className = "bg-green-900/30 border-2 border-green-500 rounded-lg p-6 animate-pulse-once";
-                el.innerHTML = `
-                    <div class="flex items-center justify-between flex-wrap gap-4">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold text-green-400 mb-2">${escapeHtml(t("codeFound"))}</h3>
-                            <p class="text-5xl font-mono font-bold text-green-300">${escapeHtml(code)}</p>
-                            <p class="text-sm text-green-200 mt-2">${escapeHtml(time)} (${escapeHtml(label)})</p>
-                        </div>
-                        <button onclick="copyCode('${escapeHtml(code)}')"
-                            class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-bold">${escapeHtml(t("copy"))}</button>
-                    </div>`;
-            } else {
-                el.className = "bg-blue-900/30 border-2 border-blue-500 rounded-lg p-6 animate-pulse-once";
-                el.innerHTML = `
-                    <div class="flex items-center justify-between flex-wrap gap-4">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold text-blue-400 mb-2">${escapeHtml(t("codeFound"))}</h3>
-                            <p class="text-5xl font-mono font-bold text-blue-300">${escapeHtml(code)}</p>
-                            <p class="text-sm text-blue-200 mt-2">${escapeHtml(time)} (${escapeHtml(label)})</p>
-                        </div>
-                        <button onclick="copyCode('${escapeHtml(code)}')"
-                            class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold">${escapeHtml(t("copy"))}</button>
-                    </div>`;
-            }
-            container.appendChild(el);
-        }
-
         async function login() {
             const loginBtn = document.getElementById("loginBtn");
             const loginBtnText = document.getElementById("loginBtnText");
@@ -673,69 +492,9 @@ a { color: #6d28d9; }
             }
         }
 
-        async function startPulling() {
-            if (isRunning || !session) return;
-            isRunning = true;
-            clearCodes();
-            const startBtn = document.getElementById("startBtn");
-            const btnText = document.getElementById("btnText");
-            startBtn.disabled = true;
-            startBtn.classList.add("opacity-50", "cursor-not-allowed");
-
-            try {
-                showStatus(t("searchingCodes", { email: session.email }));
-                const list = await apiPost("/mails", {
-                    email: session.email,
-                    password: session.password,
-                    page: 1,
-                    limit: 50,
-                });
-                const threshold = Date.now() - MAX_MINUTES * 60 * 1000;
-                const found = [];
-
-                for (const item of list.items || []) {
-                    const receivedAt = item.date ? new Date(item.date) : null;
-                    if (!receivedAt || Number.isNaN(receivedAt.getTime()) || receivedAt.getTime() < threshold) continue;
-                    const sender = item.sender || "";
-                    const subject = item.subject || "";
-                    let body = item.preview || "";
-                    if (!isRockstarMail(sender, subject, body)) continue;
-                    let code = extractOtp(`${subject} ${body}`);
-                    if (!code) {
-                        showStatus(t("readingMail", { subject: subject || t("noSubject") }));
-                        const mail = await apiPost("/mail", {
-                            email: session.email,
-                            password: session.password,
-                            message_id: String(item.id),
-                        });
-                        body = `${mail.html || ""} ${mail.text || ""} ${item.preview || ""}`;
-                        if (!isRockstarMail(sender, subject, body)) continue;
-                        code = extractOtp(`${subject} ${body}`);
-                    }
-                    if (!code) continue;
-                    found.push({
-                        code,
-                        time: relativeTime(receivedAt),
-                        is_new: Date.now() - receivedAt.getTime() < 3 * 60 * 1000,
-                    });
-                }
-
-                if (!found.length) {
-                    showStatus(t("noCodes"));
-                    return;
-                }
-                found.forEach((item) => addCodeToDisplay(item.code, item.time, item.is_new));
-                document.getElementById("statusDisplay").classList.add("hidden");
-                try { await navigator.clipboard.writeText(found[0].code); } catch {}
-            } catch (error) {
-                showStatus("❌ " + t("errorPrefix", { error: networkMessage(error) }), "error");
-            } finally {
-                isRunning = false;
-                startBtn.disabled = false;
-                startBtn.classList.remove("opacity-50", "cursor-not-allowed");
-                btnText.textContent = t("pullCodes");
-            }
-        }
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeMail();
+        });
 
         applyLanguage();
     </script>
