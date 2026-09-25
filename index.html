@@ -36,18 +36,7 @@
                     <p class="text-sm text-gray-300 mt-1">outlook.com · hotmail.com · live.com</p>
                 </div>
 
-                <div class="grid grid-cols-2 rounded-lg bg-gray-900/70 p-1">
-                    <button type="button" id="tabPassword" onclick="setAuthMode('password')"
-                        class="rounded-md px-3 py-2 text-sm font-semibold bg-purple-600" data-i18n="tabPassword">
-                        Email + Password
-                    </button>
-                    <button type="button" id="tabToken" onclick="setAuthMode('token')"
-                        class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300" data-i18n="tabToken">
-                        Token
-                    </button>
-                </div>
-
-                <div id="passwordFields" class="space-y-4">
+                <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-2" data-i18n="emailLabel">Email</label>
                         <input type="email" id="email" placeholder="email@hotmail.com"
@@ -60,15 +49,6 @@
                             placeholder="Mailbox password"
                             class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-lg"
                             onkeypress="if(event.key==='Enter') login()">
-                    </div>
-                </div>
-
-                <div id="tokenFields" class="space-y-4 hidden">
-                    <div>
-                        <label class="block text-sm font-medium mb-2" data-i18n="tokenLabel">Mail|Pass|Refresh_token|Client_id</label>
-                        <textarea id="tokenLine" rows="4"
-                            placeholder="email@hotmail.com|password|refresh_token|client_id"
-                            class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none font-mono text-sm"></textarea>
                     </div>
                 </div>
 
@@ -167,7 +147,7 @@
             <div class="bg-gray-900/50 p-6 border-t border-gray-700">
                 <h3 class="font-bold mb-3" data-i18n="howToTitle">How to use</h3>
                 <ol class="space-y-2 text-sm text-gray-300">
-                    <li data-i18n="howTo1">1. Choose Email + Password, or Token, then press Login</li>
+                    <li data-i18n="howTo1">1. Enter your email and password, then press Login</li>
                     <li data-i18n="howTo2">2. Wait for your inbox to load. You will see sender, subject, and date</li>
                     <li data-i18n="howTo3">3. Click any email to open and read the full message</li>
                     <li data-i18n="howTo4">4. Press Load more if you want older emails, or Refresh to get the latest</li>
@@ -193,14 +173,9 @@
             en: {
                 title: "Outlook / Hotmail Mail Reader",
                 subtitle: "Sign in to read every message, or pull Rockstar codes",
-                tabPassword: "Email + Password",
-                tabToken: "Token",
                 emailLabel: "Email",
                 passwordLabel: "Password",
                 passwordPlaceholder: "Mailbox password",
-                tokenLabel: "Mail|Pass|Refresh_token|Client_id",
-                tokenFormat: "Invalid format. Use Mail|Pass|Refresh_token|Client_id",
-                tokenRequired: "Please fill in every field",
                 login: "Login",
                 loggingIn: "Logging in...",
                 signedIn: "Signed in",
@@ -217,7 +192,7 @@
                 pullCodes: "Pull codes",
                 clear: "Clear",
                 howToTitle: "How to use",
-                howTo1: "1. Choose Email + Password, or Token, then press Login",
+                howTo1: "1. Enter your email and password, then press Login",
                 howTo2: "2. Wait for your inbox to load. You will see sender, subject, and date",
                 howTo3: "3. Click any email to open and read the full message",
                 howTo4: "4. Press Load more if you want older emails, or Refresh to get the latest",
@@ -230,7 +205,7 @@
                 emailNotFound: "Email not found",
                 invalidPassword: "Invalid password",
                 loginFailed: "Login failed",
-                apiUnreachable: "Could not reach API (141.98.17.64:8001)",
+                apiUnreachable: "Could not reach the server",
                 signingIn: "Signing in to Outlook / Hotmail...",
                 loadingMore: "Loading more mail...",
                 loadingInbox: "Loading inbox...",
@@ -252,14 +227,9 @@
             th: {
                 title: "อ่านเมล Outlook / Hotmail",
                 subtitle: "ล็อกอินแล้วอ่านข้อความเมลทั้งหมด หรือดึงโค้ด Rockstar",
-                tabPassword: "อีเมล + รหัสผ่าน",
-                tabToken: "โทเคน",
                 emailLabel: "อีเมล",
                 passwordLabel: "รหัสผ่าน",
                 passwordPlaceholder: "รหัสผ่านเมล",
-                tokenLabel: "เมล|รหัสผ่าน|Refresh_token|Client_id",
-                tokenFormat: "รูปแบบไม่ถูกต้อง ใช้ เมล|รหัสผ่าน|Refresh_token|Client_id",
-                tokenRequired: "กรุณากรอกข้อมูลให้ครบทุกช่อง",
                 login: "เข้าสู่ระบบ",
                 loggingIn: "กำลังเข้าสู่ระบบ...",
                 signedIn: "เข้าสู่ระบบแล้ว",
@@ -276,7 +246,7 @@
                 pullCodes: "เริ่มดึงโค้ด",
                 clear: "ล้าง",
                 howToTitle: "วิธีใช้",
-                howTo1: "1. เลือกอีเมล + รหัสผ่าน หรือโทเคน แล้วกดเข้าสู่ระบบ",
+                howTo1: "1. กรอกอีเมลและรหัสผ่าน แล้วกดเข้าสู่ระบบ",
                 howTo2: "2. รอกล่องจดหมายโหลด จะเห็นผู้ส่ง หัวข้อ และวันที่",
                 howTo3: "3. คลิกเมลที่ต้องการ เพื่อเปิดอ่านข้อความเต็ม",
                 howTo4: "4. กดโหลดเพิ่มถ้าอยากดูเมลเก่า หรือกดรีเฟรชเพื่อดึงเมลล่าสุด",
@@ -289,7 +259,7 @@
                 emailNotFound: "ไม่พบอีเมลในระบบ",
                 invalidPassword: "รหัสผ่านไม่ถูกต้อง",
                 loginFailed: "เข้าสู่ระบบไม่สำเร็จ",
-                apiUnreachable: "เชื่อมต่อ API ไม่ได้ (141.98.17.64:8001)",
+                apiUnreachable: "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้",
                 signingIn: "กำลังเข้าสู่ระบบ Outlook / Hotmail...",
                 loadingMore: "กำลังโหลดเมลเพิ่ม...",
                 loadingInbox: "กำลังโหลดกล่องจดหมาย...",
@@ -311,7 +281,6 @@
         };
 
         let lang = localStorage.getItem("mailReaderLang") === "th" ? "th" : "en";
-        let authMode = "password";
         let session = null;
         let isRunning = false;
         let mailPage = 1;
@@ -342,7 +311,6 @@
                 "rounded-md px-3 py-1.5 text-sm font-semibold " + (lang === "en" ? "bg-purple-600" : "text-gray-300");
             document.getElementById("langThBtn").className =
                 "rounded-md px-3 py-1.5 text-sm font-semibold " + (lang === "th" ? "bg-purple-600" : "text-gray-300");
-            setAuthMode(authMode);
             if (session) {
                 const inboxHidden = document.getElementById("inboxView").classList.contains("hidden");
                 setAppView(inboxHidden ? "codes" : "inbox");
@@ -372,31 +340,7 @@
                 "rounded-md px-3 py-2 text-sm font-semibold " + (view === "codes" ? "bg-purple-600" : "text-gray-300");
         }
 
-        function setAuthMode(mode) {
-            authMode = mode;
-            document.getElementById("passwordFields").classList.toggle("hidden", mode !== "password");
-            document.getElementById("tokenFields").classList.toggle("hidden", mode !== "token");
-            document.getElementById("tabPassword").className =
-                "rounded-md px-3 py-2 text-sm font-semibold " + (mode === "password" ? "bg-purple-600" : "text-gray-300");
-            document.getElementById("tabToken").className =
-                "rounded-md px-3 py-2 text-sm font-semibold " + (mode === "token" ? "bg-purple-600" : "text-gray-300");
-        }
-
-        function parseTokenLine(line) {
-            const parts = line.trim().replace(/\r/g, "").split("|").map((part) => part.trim());
-            if (parts.length < 4) throw new Error(t("tokenFormat"));
-            const email = parts[0];
-            const password = parts[1];
-            const clientId = parts[parts.length - 1];
-            const refreshToken = parts.slice(2, -1).join("|").trim();
-            if (!email || !password || !refreshToken || !clientId) throw new Error(t("tokenRequired"));
-            return { email, password };
-        }
-
         function getCredentials() {
-            if (authMode === "token") {
-                return parseTokenLine(document.getElementById("tokenLine").value);
-            }
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
             if (!email || !password) throw new Error(t("emailPasswordRequired"));
