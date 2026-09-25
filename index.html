@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rockstar Games - Auto Code Puller</title>
+    <title>Outlook / Hotmail Mail Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -12,264 +12,769 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        .animate-pulse-once {
-            animation: pulse-once 0.5s ease-in-out;
-        }
+        .animate-pulse-once { animation: pulse-once 0.5s ease-in-out; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-3xl">
+    <div class="fixed top-4 right-4 z-50 flex rounded-lg bg-gray-900/80 border border-purple-500/40 p-1 backdrop-blur">
+        <button type="button" id="langEnBtn" onclick="setLanguage('en')"
+            class="rounded-md px-3 py-1.5 text-sm font-semibold bg-purple-600">EN</button>
+        <button type="button" id="langThBtn" onclick="setLanguage('th')"
+            class="rounded-md px-3 py-1.5 text-sm font-semibold text-gray-300">TH</button>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
         <div class="bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden">
-            <!-- Header -->
             <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-6">
-                <h1 class="text-3xl font-bold">🎮 Rockstar Games - Auto Code Puller</h1>
-                <p class="text-purple-100 mt-2">ดึงโค้ดยืนยันตัวตนอัตโนมัติ </p>
+                <h1 class="text-3xl font-bold" data-i18n="title">Outlook / Hotmail Mail Reader</h1>
+                <p class="text-purple-100 mt-2" data-i18n="subtitle">Sign in to read every message, or pull Rockstar codes</p>
             </div>
 
-            <!-- Form -->
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-2">📧 กรอกอีเมลของคุณ</label>
-                    <input type="email" id="email" placeholder="example@outlook.com"
-                        class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-lg"
-                        onkeypress="if(event.key==='Enter') startPulling()">
+            <div id="loginPanel" class="p-6 space-y-5">
+                <div class="rounded-xl border border-purple-500/30 bg-gray-900/40 p-4">
+                    <p class="font-semibold">Outlook / Hotmail</p>
+                    <p class="text-sm text-gray-300 mt-1">outlook.com · hotmail.com · live.com</p>
                 </div>
 
-                <div class="flex gap-3 pt-2">
-                    <button onclick="startPulling()" id="startBtn"
-                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-4 rounded-lg font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-                        <span id="btnText">🚀 เริ่มดึงโค้ด</span>
+                <div class="grid grid-cols-2 rounded-lg bg-gray-900/70 p-1">
+                    <button type="button" id="tabPassword" onclick="setAuthMode('password')"
+                        class="rounded-md px-3 py-2 text-sm font-semibold bg-purple-600" data-i18n="tabPassword">
+                        Email + Password
                     </button>
-                    <button onclick="clearAll()"
-                        class="bg-gray-700 hover:bg-gray-600 px-6 py-4 rounded-lg font-bold transition-all">
-                        🗑️ ล้าง
+                    <button type="button" id="tabToken" onclick="setAuthMode('token')"
+                        class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300" data-i18n="tabToken">
+                        Token
                     </button>
+                </div>
+
+                <div id="passwordFields" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" data-i18n="emailLabel">Email</label>
+                        <input type="email" id="email" placeholder="email@hotmail.com"
+                            class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-lg"
+                            onkeypress="if(event.key==='Enter') login()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2" data-i18n="passwordLabel">Password</label>
+                        <input type="password" id="password" data-i18n-placeholder="passwordPlaceholder"
+                            placeholder="Mailbox password"
+                            class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-lg"
+                            onkeypress="if(event.key==='Enter') login()">
+                    </div>
+                </div>
+
+                <div id="tokenFields" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" data-i18n="tokenLabel">Mail|Pass|Refresh_token|Client_id</label>
+                        <textarea id="tokenLine" rows="4"
+                            placeholder="email@hotmail.com|password|refresh_token|client_id"
+                            class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none font-mono text-sm"></textarea>
+                    </div>
+                </div>
+
+                <button onclick="login()" id="loginBtn"
+                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-4 rounded-lg font-bold text-lg transition-all">
+                    <span id="loginBtnText" data-i18n="login">Login</span>
+                </button>
+            </div>
+
+            <div id="appPanel" class="hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-700 px-6 py-4">
+                    <div>
+                        <p class="text-xs text-green-200" data-i18n="signedIn">Signed in</p>
+                        <p id="loggedEmail" class="font-semibold text-green-100"></p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="refreshInbox()" id="refreshBtn"
+                            class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold" data-i18n="refresh">
+                            Refresh
+                        </button>
+                        <button onclick="logout()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold" data-i18n="signOut">
+                            Sign out
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-1 mx-6 mt-4 rounded-lg bg-gray-900/70 p-1">
+                    <button type="button" id="viewInboxBtn" onclick="setAppView('inbox')"
+                        class="rounded-md px-3 py-2 text-sm font-semibold bg-purple-600" data-i18n="inbox">
+                        Inbox
+                    </button>
+                    <button type="button" id="viewCodesBtn" onclick="setAppView('codes')"
+                        class="rounded-md px-3 py-2 text-sm font-semibold text-gray-300" data-i18n="rockstarTab">
+                        Rockstar codes
+                    </button>
+                </div>
+
+                <div id="inboxView" class="p-6 space-y-4">
+                    <div id="mailViewer" class="hidden rounded-xl border border-purple-500/30 bg-gray-900/50 overflow-hidden">
+                        <div class="flex items-start justify-between gap-3 border-b border-gray-700 p-4">
+                            <div class="min-w-0">
+                                <h3 id="viewerSubject" class="text-lg font-semibold"></h3>
+                                <p id="viewerFrom" class="text-sm text-gray-300 mt-1"></p>
+                                <p id="viewerDate" class="text-sm text-gray-400"></p>
+                            </div>
+                            <button onclick="closeMail()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm font-bold" data-i18n="close">
+                                Close
+                            </button>
+                        </div>
+                        <div id="viewerLoading" class="hidden p-6 text-purple-300" data-i18n="loadingMessage">Loading message...</div>
+                        <iframe id="viewerFrame" title="Mail content" class="w-full bg-white min-h-[320px]"
+                            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-gray-700">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-900/70 text-gray-300">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold" data-i18n="from">From</th>
+                                    <th class="px-4 py-3 font-semibold" data-i18n="subject">Subject</th>
+                                    <th class="px-4 py-3 font-semibold whitespace-nowrap" data-i18n="date">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mailTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <p id="mailCount" class="text-sm text-gray-400"></p>
+                    <button onclick="loadMoreMails()" id="loadMoreBtn"
+                        class="hidden w-full bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg font-bold" data-i18n="loadMore">
+                        Load more
+                    </button>
+                </div>
+
+                <div id="codesView" class="hidden p-6 space-y-4">
+                    <div class="flex gap-3">
+                        <button onclick="startPulling()" id="startBtn"
+                            class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-4 rounded-lg font-bold text-lg transition-all">
+                            <span id="btnText" data-i18n="pullCodes">Pull codes</span>
+                        </button>
+                        <button onclick="clearCodes()" class="bg-gray-700 hover:bg-gray-600 px-6 py-4 rounded-lg font-bold" data-i18n="clear">
+                            Clear
+                        </button>
+                    </div>
+                    <div id="codeContainer" class="hidden space-y-3 max-h-96 overflow-y-auto"></div>
                 </div>
             </div>
 
-            <!-- Code Display Container -->
-            <div id="codeContainer" class="hidden mx-6 mb-6 space-y-3 max-h-96 overflow-y-auto">
-            </div>
-
-            <!-- Status Display -->
             <div id="statusDisplay" class="hidden mx-6 mb-6 bg-purple-900/30 border-2 border-purple-500 rounded-lg p-4">
                 <p class="text-purple-300 font-medium" id="statusText"></p>
             </div>
-
-            <!-- Error Display -->
             <div id="errorDisplay" class="hidden mx-6 mb-6 bg-red-900/30 border-2 border-red-500 rounded-lg p-4">
                 <p class="text-red-300 font-medium" id="errorText"></p>
             </div>
 
-            <!-- Instructions -->
             <div class="bg-gray-900/50 p-6 border-t border-gray-700">
-                <h3 class="font-bold mb-3">ℹ️ วิธีการใช้งาน</h3>
+                <h3 class="font-bold mb-3" data-i18n="howToTitle">How to use</h3>
                 <ol class="space-y-2 text-sm text-gray-300">
-                    <li>1. กรอกอีเมลของคุณในช่องด้านบน</li>
-                    <li>2. คลิกปุ่ม "เริ่มดึงโค้ด"</li>
-                    <li>3. รอระบบค้นหาโค้ดยืนยันตัวตนจากกล่องจดหมาย</li>
-                    <li>4. เมื่อพบโค้ด จะแสดงเป็นขั้นๆ โค้ดล่าสุดอยู่ด้านบน</li>
+                    <li data-i18n="howTo1">1. Choose Email + Password, or Token, then press Login</li>
+                    <li data-i18n="howTo2">2. Wait for your inbox to load. You will see sender, subject, and date</li>
+                    <li data-i18n="howTo3">3. Click any email to open and read the full message</li>
+                    <li data-i18n="howTo4">4. Press Load more if you want older emails, or Refresh to get the latest</li>
+                    <li data-i18n="howTo5">5. Open the Rockstar codes tab only when you need a verification code</li>
                 </ol>
             </div>
-        </div>
-
-        <div class="text-center mt-6 text-gray-400 text-sm">
-            <p>🔒 ข้อมูลของคุณปลอดภัย 100%</p>
-            <p>🌐 เชื่อมต่อกับ Server: 141.98.17.64</p>
         </div>
     </div>
 
     <script>
+        const API_URL = "http://141.98.17.64:8001";
+        const OTP_REGEX = /\b(?!000000|111111|222222|333333|444444|555555|666666|777777|888888|999999)\d{6}\b/g;
+        const ROCKSTAR_KEYWORDS = [
+            "verification code", "verify", "security code", "authentication code",
+            "your rockstar games", "código de verificação", "código de verificación",
+            "code de vérification", "bestätigungscode", "код подтверждения",
+            "código", "codigo", "code", "รหัสยืนยัน",
+        ];
+        const MAX_MINUTES = 30;
+        const PAGE_SIZE = 20;
+
+        const I18N = {
+            en: {
+                title: "Outlook / Hotmail Mail Reader",
+                subtitle: "Sign in to read every message, or pull Rockstar codes",
+                tabPassword: "Email + Password",
+                tabToken: "Token",
+                emailLabel: "Email",
+                passwordLabel: "Password",
+                passwordPlaceholder: "Mailbox password",
+                tokenLabel: "Mail|Pass|Refresh_token|Client_id",
+                tokenFormat: "Invalid format. Use Mail|Pass|Refresh_token|Client_id",
+                tokenRequired: "Please fill in every field",
+                login: "Login",
+                loggingIn: "Logging in...",
+                signedIn: "Signed in",
+                refresh: "Refresh",
+                signOut: "Sign out",
+                inbox: "Inbox",
+                rockstarTab: "Rockstar codes",
+                close: "Close",
+                loadingMessage: "Loading message...",
+                from: "From",
+                subject: "Subject",
+                date: "Date",
+                loadMore: "Load more",
+                pullCodes: "Pull codes",
+                clear: "Clear",
+                howToTitle: "How to use",
+                howTo1: "1. Choose Email + Password, or Token, then press Login",
+                howTo2: "2. Wait for your inbox to load. You will see sender, subject, and date",
+                howTo3: "3. Click any email to open and read the full message",
+                howTo4: "4. Press Load more if you want older emails, or Refresh to get the latest",
+                howTo5: "5. Open the Rockstar codes tab only when you need a verification code",
+                emptyInbox: "No messages in this inbox",
+                noSubject: "(No Subject)",
+                unknownSender: "(Unknown)",
+                showingCount: "Showing {shown} of {total} messages",
+                emailPasswordRequired: "Please enter email and password",
+                emailNotFound: "Email not found",
+                invalidPassword: "Invalid password",
+                loginFailed: "Login failed",
+                apiUnreachable: "Could not reach API (141.98.17.64:8001)",
+                signingIn: "Signing in to Outlook / Hotmail...",
+                loadingMore: "Loading more mail...",
+                loadingInbox: "Loading inbox...",
+                noContent: "No content",
+                readFailed: "Could not read this message: {error}",
+                copied: "Copied code: {code}",
+                codeFound: "Code found!",
+                newMail: "new mail",
+                oldMail: "older mail",
+                copy: "Copy",
+                searchingCodes: "Searching codes for {email}...",
+                readingMail: "Reading mail: {subject}",
+                noCodes: "No codes found in the last 30 minutes",
+                errorPrefix: "Error: {error}",
+                justNow: "just now",
+                minutesAgo: "{n} minutes ago",
+                hoursAgo: "{n} hours ago",
+            },
+            th: {
+                title: "อ่านเมล Outlook / Hotmail",
+                subtitle: "ล็อกอินแล้วอ่านข้อความเมลทั้งหมด หรือดึงโค้ด Rockstar",
+                tabPassword: "อีเมล + รหัสผ่าน",
+                tabToken: "โทเคน",
+                emailLabel: "อีเมล",
+                passwordLabel: "รหัสผ่าน",
+                passwordPlaceholder: "รหัสผ่านเมล",
+                tokenLabel: "เมล|รหัสผ่าน|Refresh_token|Client_id",
+                tokenFormat: "รูปแบบไม่ถูกต้อง ใช้ เมล|รหัสผ่าน|Refresh_token|Client_id",
+                tokenRequired: "กรุณากรอกข้อมูลให้ครบทุกช่อง",
+                login: "เข้าสู่ระบบ",
+                loggingIn: "กำลังเข้าสู่ระบบ...",
+                signedIn: "เข้าสู่ระบบแล้ว",
+                refresh: "รีเฟรช",
+                signOut: "ออกจากระบบ",
+                inbox: "กล่องจดหมาย",
+                rockstarTab: "ดึงโค้ด Rockstar",
+                close: "ปิด",
+                loadingMessage: "กำลังโหลดข้อความ...",
+                from: "จาก",
+                subject: "หัวข้อ",
+                date: "วันที่",
+                loadMore: "โหลดเพิ่ม",
+                pullCodes: "เริ่มดึงโค้ด",
+                clear: "ล้าง",
+                howToTitle: "วิธีใช้",
+                howTo1: "1. เลือกอีเมล + รหัสผ่าน หรือโทเคน แล้วกดเข้าสู่ระบบ",
+                howTo2: "2. รอกล่องจดหมายโหลด จะเห็นผู้ส่ง หัวข้อ และวันที่",
+                howTo3: "3. คลิกเมลที่ต้องการ เพื่อเปิดอ่านข้อความเต็ม",
+                howTo4: "4. กดโหลดเพิ่มถ้าอยากดูเมลเก่า หรือกดรีเฟรชเพื่อดึงเมลล่าสุด",
+                howTo5: "5. เปิดแท็บดึงโค้ด Rockstar เฉพาะตอนที่ต้องการโค้ดยืนยัน",
+                emptyInbox: "ไม่พบข้อความในกล่องจดหมาย",
+                noSubject: "(ไม่มีหัวข้อ)",
+                unknownSender: "(ไม่ทราบผู้ส่ง)",
+                showingCount: "แสดง {shown} จาก {total} ข้อความ",
+                emailPasswordRequired: "กรุณากรอกอีเมลและรหัสผ่าน",
+                emailNotFound: "ไม่พบอีเมลในระบบ",
+                invalidPassword: "รหัสผ่านไม่ถูกต้อง",
+                loginFailed: "เข้าสู่ระบบไม่สำเร็จ",
+                apiUnreachable: "เชื่อมต่อ API ไม่ได้ (141.98.17.64:8001)",
+                signingIn: "กำลังเข้าสู่ระบบ Outlook / Hotmail...",
+                loadingMore: "กำลังโหลดเมลเพิ่ม...",
+                loadingInbox: "กำลังโหลดกล่องจดหมาย...",
+                noContent: "ไม่มีเนื้อหา",
+                readFailed: "อ่านเมลไม่สำเร็จ: {error}",
+                copied: "คัดลอกโค้ดแล้ว: {code}",
+                codeFound: "พบโค้ดแล้ว!",
+                newMail: "เมลใหม่",
+                oldMail: "เมลเก่า",
+                copy: "คัดลอก",
+                searchingCodes: "กำลังค้นหาโค้ดของ {email}...",
+                readingMail: "กำลังอ่านเมล: {subject}",
+                noCodes: "ยังไม่พบโค้ดใน 30 นาทีล่าสุด",
+                errorPrefix: "เกิดข้อผิดพลาด: {error}",
+                justNow: "เมื่อสักครู่",
+                minutesAgo: "{n} นาทีที่แล้ว",
+                hoursAgo: "{n} ชั่วโมงที่แล้ว",
+            },
+        };
+
+        let lang = localStorage.getItem("mailReaderLang") === "th" ? "th" : "en";
+        let authMode = "password";
+        let session = null;
         let isRunning = false;
-        let foundCodes = [];
+        let mailPage = 1;
+        let mailItems = [];
+        let mailTotal = 0;
+        let inboxLoading = false;
+        let lastViewerItem = null;
 
-        // ⚠️ เปลี่ยนเป็น HTTPS เพื่อให้ใช้งานได้บน GitHub Pages
-        // ถ้า server ยังไม่มี SSL ให้ติดตั้ง Cloudflare Tunnel หรือ Nginx + Let's Encrypt
-        const API_URL = 'https://outlo0k.online';
+        function t(key, vars) {
+            let text = I18N[lang][key] ?? I18N.en[key] ?? key;
+            if (vars) {
+                Object.keys(vars).forEach((name) => {
+                    text = text.replaceAll("{" + name + "}", String(vars[name]));
+                });
+            }
+            return text;
+        }
 
-        function showStatus(message, type = 'info') {
-            const statusDisplay = document.getElementById('statusDisplay');
-            const statusText = document.getElementById('statusText');
-            const errorDisplay = document.getElementById('errorDisplay');
-            const errorText = document.getElementById('errorText');
-
-            if (type === 'error') {
-                errorDisplay.classList.remove('hidden');
-                errorText.textContent = message;
-                statusDisplay.classList.add('hidden');
-            } else {
-                statusDisplay.classList.remove('hidden');
-                statusText.textContent = message;
-                errorDisplay.classList.add('hidden');
+        function applyLanguage() {
+            document.documentElement.lang = lang;
+            document.querySelectorAll("[data-i18n]").forEach((el) => {
+                el.textContent = t(el.getAttribute("data-i18n"));
+            });
+            document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+                el.setAttribute("placeholder", t(el.getAttribute("data-i18n-placeholder")));
+            });
+            document.getElementById("langEnBtn").className =
+                "rounded-md px-3 py-1.5 text-sm font-semibold " + (lang === "en" ? "bg-purple-600" : "text-gray-300");
+            document.getElementById("langThBtn").className =
+                "rounded-md px-3 py-1.5 text-sm font-semibold " + (lang === "th" ? "bg-purple-600" : "text-gray-300");
+            setAuthMode(authMode);
+            if (session) {
+                const inboxHidden = document.getElementById("inboxView").classList.contains("hidden");
+                setAppView(inboxHidden ? "codes" : "inbox");
+                renderMailList();
+                if (lastViewerItem) fillViewerHeader(lastViewerItem);
+            }
+            if (!isRunning) {
+                document.getElementById("btnText").textContent = t("pullCodes");
+            }
+            if (!document.getElementById("loginBtn").disabled) {
+                document.getElementById("loginBtnText").textContent = t("login");
             }
         }
 
-        function clearAll() {
-            document.getElementById('email').value = '';
-            document.getElementById('codeContainer').classList.add('hidden');
-            document.getElementById('codeContainer').innerHTML = '';
-            document.getElementById('statusDisplay').classList.add('hidden');
-            document.getElementById('errorDisplay').classList.add('hidden');
-            foundCodes = [];
+        function setLanguage(next) {
+            lang = next === "th" ? "th" : "en";
+            localStorage.setItem("mailReaderLang", lang);
+            applyLanguage();
+        }
+
+        function setAppView(view) {
+            document.getElementById("inboxView").classList.toggle("hidden", view !== "inbox");
+            document.getElementById("codesView").classList.toggle("hidden", view !== "codes");
+            document.getElementById("viewInboxBtn").className =
+                "rounded-md px-3 py-2 text-sm font-semibold " + (view === "inbox" ? "bg-purple-600" : "text-gray-300");
+            document.getElementById("viewCodesBtn").className =
+                "rounded-md px-3 py-2 text-sm font-semibold " + (view === "codes" ? "bg-purple-600" : "text-gray-300");
+        }
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            document.getElementById("passwordFields").classList.toggle("hidden", mode !== "password");
+            document.getElementById("tokenFields").classList.toggle("hidden", mode !== "token");
+            document.getElementById("tabPassword").className =
+                "rounded-md px-3 py-2 text-sm font-semibold " + (mode === "password" ? "bg-purple-600" : "text-gray-300");
+            document.getElementById("tabToken").className =
+                "rounded-md px-3 py-2 text-sm font-semibold " + (mode === "token" ? "bg-purple-600" : "text-gray-300");
+        }
+
+        function parseTokenLine(line) {
+            const parts = line.trim().replace(/\r/g, "").split("|").map((part) => part.trim());
+            if (parts.length < 4) throw new Error(t("tokenFormat"));
+            const email = parts[0];
+            const password = parts[1];
+            const clientId = parts[parts.length - 1];
+            const refreshToken = parts.slice(2, -1).join("|").trim();
+            if (!email || !password || !refreshToken || !clientId) throw new Error(t("tokenRequired"));
+            return { email, password };
+        }
+
+        function getCredentials() {
+            if (authMode === "token") {
+                return parseTokenLine(document.getElementById("tokenLine").value);
+            }
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            if (!email || !password) throw new Error(t("emailPasswordRequired"));
+            return { email, password };
+        }
+
+        function loginErrorMessage(detail) {
+            if (detail === "Email not found") return t("emailNotFound");
+            if (detail === "Invalid password") return t("invalidPassword");
+            if (typeof detail === "string" && detail.trim()) return detail;
+            return t("loginFailed");
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function stripHtml(text) {
+            return String(text || "")
+                .replace(/<[^>]*>/g, " ")
+                .replace(/&nbsp;/g, " ")
+                .replace(/&amp;/g, "&")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .replace(/&quot;/g, '"')
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function isRockstarMail(sender, subject, body) {
+            const haystack = `${sender} ${subject} ${body}`.toLowerCase();
+            const fromRockstar =
+                sender.toLowerCase().includes("rockstargames.com") ||
+                sender.toLowerCase().includes("rockstar") ||
+                haystack.includes("rockstar games");
+            if (!fromRockstar) return false;
+            OTP_REGEX.lastIndex = 0;
+            return ROCKSTAR_KEYWORDS.some((keyword) => haystack.includes(keyword)) || OTP_REGEX.test(haystack);
+        }
+
+        function extractOtp(text) {
+            OTP_REGEX.lastIndex = 0;
+            const matches = stripHtml(text).match(OTP_REGEX);
+            if (!matches || !matches.length) return null;
+            for (const code of matches) {
+                const idx = text.toLowerCase().indexOf(code);
+                const context = text.toLowerCase().slice(Math.max(0, idx - 50), idx + 50);
+                if (!context.includes("example")) return code;
+            }
+            return matches[0];
+        }
+
+        function relativeTime(date) {
+            const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+            if (minutes < 1) return t("justNow");
+            if (minutes < 60) return t("minutesAgo", { n: minutes });
+            return t("hoursAgo", { n: Math.floor(minutes / 60) });
+        }
+
+        function formatDate(value) {
+            const date = value ? new Date(value) : null;
+            if (!date || Number.isNaN(date.getTime())) return "-";
+            return date.toLocaleString(lang === "th" ? "th-TH" : "en-US");
+        }
+
+        async function apiPost(path, body) {
+            const response = await fetch(`${API_URL}${path}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(loginErrorMessage(data.detail));
+            return data;
+        }
+
+        function showStatus(message, type = "info") {
+            const statusDisplay = document.getElementById("statusDisplay");
+            const errorDisplay = document.getElementById("errorDisplay");
+            if (type === "error") {
+                errorDisplay.classList.remove("hidden");
+                document.getElementById("errorText").textContent = message;
+                statusDisplay.classList.add("hidden");
+            } else {
+                statusDisplay.classList.remove("hidden");
+                document.getElementById("statusText").textContent = message;
+                errorDisplay.classList.add("hidden");
+            }
+        }
+
+        function hideAlerts() {
+            document.getElementById("statusDisplay").classList.add("hidden");
+            document.getElementById("errorDisplay").classList.add("hidden");
+        }
+
+        function networkMessage(error) {
+            return error.message === "Failed to fetch" ? t("apiUnreachable") : error.message;
+        }
+
+        function setLoggedIn(credentials) {
+            session = credentials;
+            document.getElementById("loginPanel").classList.add("hidden");
+            document.getElementById("appPanel").classList.remove("hidden");
+            document.getElementById("loggedEmail").textContent = credentials.email;
+            setAppView("inbox");
+            refreshInbox();
+        }
+
+        function logout() {
+            session = null;
+            isRunning = false;
+            mailPage = 1;
+            mailItems = [];
+            mailTotal = 0;
+            lastViewerItem = null;
+            document.getElementById("loginPanel").classList.remove("hidden");
+            document.getElementById("appPanel").classList.add("hidden");
+            closeMail();
+            clearCodes();
+            hideAlerts();
+        }
+
+        function fillViewerHeader(item) {
+            document.getElementById("viewerSubject").textContent = item.subject || t("noSubject");
+            document.getElementById("viewerFrom").textContent = t("from") + ": " + (item.sender || t("unknownSender"));
+            document.getElementById("viewerDate").textContent = t("date") + ": " + formatDate(item.date);
+        }
+
+        function renderMailList() {
+            const body = document.getElementById("mailTableBody");
+            if (!mailItems.length) {
+                body.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">${escapeHtml(t("emptyInbox"))}</td></tr>`;
+            } else {
+                body.innerHTML = mailItems.map((item, index) => `
+                    <tr onclick="openMail(${index})" class="cursor-pointer border-t border-gray-700 hover:bg-purple-900/30">
+                        <td class="px-4 py-3 text-purple-100">${escapeHtml(item.sender || t("unknownSender"))}</td>
+                        <td class="px-4 py-3">
+                            <p class="font-medium">${escapeHtml(item.subject || t("noSubject"))}</p>
+                            <p class="text-xs text-gray-400 mt-1 line-clamp-2">${escapeHtml(item.preview || "")}</p>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-300">${escapeHtml(formatDate(item.date))}</td>
+                    </tr>
+                `).join("");
+            }
+
+            document.getElementById("mailCount").textContent = mailTotal
+                ? t("showingCount", { shown: mailItems.length, total: mailTotal })
+                : "";
+            document.getElementById("loadMoreBtn").classList.toggle("hidden", mailItems.length >= mailTotal || !mailItems.length);
+        }
+
+        async function loadMails(page, append) {
+            if (!session || inboxLoading) return;
+            inboxLoading = true;
+            const refreshBtn = document.getElementById("refreshBtn");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+            refreshBtn.disabled = true;
+            loadMoreBtn.disabled = true;
+            showStatus(append ? t("loadingMore") : t("loadingInbox"));
+
+            try {
+                const data = await apiPost("/mails", {
+                    email: session.email,
+                    password: session.password,
+                    page,
+                    limit: PAGE_SIZE,
+                });
+                mailPage = data.page || page;
+                mailTotal = data.total || 0;
+                mailItems = append ? mailItems.concat(data.items || []) : (data.items || []);
+                renderMailList();
+                hideAlerts();
+            } catch (error) {
+                showStatus("❌ " + networkMessage(error), "error");
+            } finally {
+                inboxLoading = false;
+                refreshBtn.disabled = false;
+                loadMoreBtn.disabled = false;
+            }
+        }
+
+        function refreshInbox() {
+            mailPage = 1;
+            mailItems = [];
+            lastViewerItem = null;
+            closeMail();
+            return loadMails(1, false);
+        }
+
+        function loadMoreMails() {
+            return loadMails(mailPage + 1, true);
+        }
+
+        function closeMail() {
+            lastViewerItem = null;
+            document.getElementById("mailViewer").classList.add("hidden");
+            document.getElementById("viewerFrame").srcdoc = "";
+        }
+
+        async function openMail(index) {
+            const item = mailItems[index];
+            if (!item || !session) return;
+
+            lastViewerItem = item;
+            document.getElementById("mailViewer").classList.remove("hidden");
+            fillViewerHeader(item);
+            document.getElementById("viewerLoading").classList.remove("hidden");
+            document.getElementById("viewerFrame").srcdoc = "";
+            document.getElementById("mailViewer").scrollIntoView({ behavior: "smooth", block: "start" });
+
+            try {
+                const mail = await apiPost("/mail", {
+                    email: session.email,
+                    password: session.password,
+                    message_id: String(item.id),
+                });
+                const content = mail.html || mail.text || item.preview || t("noContent");
+                const isHtml = Boolean(mail.html);
+                document.getElementById("viewerFrame").srcdoc = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><base target="_blank">
+<style>
+body { margin: 16px; font-family: system-ui, sans-serif; color: #111; background: #fff; }
+img { max-width: 100%; height: auto; }
+a { color: #6d28d9; }
+</style></head>
+<body>${isHtml ? content : `<pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(content)}</pre>`}</body></html>`;
+                hideAlerts();
+            } catch (error) {
+                document.getElementById("viewerFrame").srcdoc =
+                    `<p style="padding:16px;font-family:system-ui">${escapeHtml(t("readFailed", { error: networkMessage(error) }))}</p>`;
+                showStatus("❌ " + networkMessage(error), "error");
+            } finally {
+                document.getElementById("viewerLoading").classList.add("hidden");
+            }
+        }
+
+        function clearCodes() {
+            document.getElementById("codeContainer").classList.add("hidden");
+            document.getElementById("codeContainer").innerHTML = "";
+            hideAlerts();
         }
 
         function copyCode(code) {
             navigator.clipboard.writeText(code);
-            showStatus('📋 คัดลอกโค้ดแล้ว: ' + code, 'info');
+            showStatus(t("copied", { code }));
         }
 
         function addCodeToDisplay(code, time, isNew) {
-            foundCodes.unshift({ code, time, isNew });
-
-            const container = document.getElementById('codeContainer');
-            container.classList.remove('hidden');
-
-            const codeElement = document.createElement('div');
-
+            const container = document.getElementById("codeContainer");
+            container.classList.remove("hidden");
+            const el = document.createElement("div");
+            const label = isNew ? t("newMail") : t("oldMail");
             if (isNew) {
-                codeElement.className = 'bg-green-900/30 border-2 border-green-500 rounded-lg p-6 animate-pulse-once';
-                codeElement.innerHTML = `
+                el.className = "bg-green-900/30 border-2 border-green-500 rounded-lg p-6 animate-pulse-once";
+                el.innerHTML = `
                     <div class="flex items-center justify-between flex-wrap gap-4">
                         <div class="flex-1">
-                            <h3 class="text-xl font-bold text-green-400 mb-2">✅ พบโค้ดแล้ว!</h3>
-                            <p class="text-5xl font-mono font-bold text-green-300">${code}</p>
-                            <p class="text-sm text-green-200 mt-2">📅 ${time} (เมลใหม่)</p>
+                            <h3 class="text-xl font-bold text-green-400 mb-2">${escapeHtml(t("codeFound"))}</h3>
+                            <p class="text-5xl font-mono font-bold text-green-300">${escapeHtml(code)}</p>
+                            <p class="text-sm text-green-200 mt-2">${escapeHtml(time)} (${escapeHtml(label)})</p>
                         </div>
-                        <button onclick="copyCode('${code}')"
-                            class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2">
-                            📋 คัดลอก
-                        </button>
-                    </div>
-                `;
+                        <button onclick="copyCode('${escapeHtml(code)}')"
+                            class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-bold">${escapeHtml(t("copy"))}</button>
+                    </div>`;
             } else {
-                codeElement.className = 'bg-blue-900/30 border-2 border-blue-500 rounded-lg p-6 animate-pulse-once';
-                codeElement.innerHTML = `
+                el.className = "bg-blue-900/30 border-2 border-blue-500 rounded-lg p-6 animate-pulse-once";
+                el.innerHTML = `
                     <div class="flex items-center justify-between flex-wrap gap-4">
                         <div class="flex-1">
-                            <h3 class="text-xl font-bold text-blue-400 mb-2">✅ พบโค้ดแล้ว!</h3>
-                            <p class="text-5xl font-mono font-bold text-blue-300">${code}</p>
-                            <p class="text-sm text-blue-200 mt-2">📅 ${time} (เมลเก่า)</p>
+                            <h3 class="text-xl font-bold text-blue-400 mb-2">${escapeHtml(t("codeFound"))}</h3>
+                            <p class="text-5xl font-mono font-bold text-blue-300">${escapeHtml(code)}</p>
+                            <p class="text-sm text-blue-200 mt-2">${escapeHtml(time)} (${escapeHtml(label)})</p>
                         </div>
-                        <button onclick="copyCode('${code}')"
-                            class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2">
-                            📋 คัดลอก
-                        </button>
-                    </div>
-                `;
+                        <button onclick="copyCode('${escapeHtml(code)}')"
+                            class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold">${escapeHtml(t("copy"))}</button>
+                    </div>`;
             }
-
-            container.appendChild(codeElement);
+            container.appendChild(el);
         }
 
-        async function startPulling() {
-            if (isRunning) return;
-
-            const email = document.getElementById('email').value.trim();
-
-            if (!email) {
-                showStatus('❌ กรุณากรอกอีเมล!', 'error');
+        async function login() {
+            const loginBtn = document.getElementById("loginBtn");
+            const loginBtnText = document.getElementById("loginBtnText");
+            let credentials;
+            try {
+                credentials = getCredentials();
+            } catch (error) {
+                showStatus("❌ " + error.message, "error");
                 return;
             }
 
-            isRunning = true;
-
-            document.getElementById('codeContainer').classList.add('hidden');
-            document.getElementById('codeContainer').innerHTML = '';
-            foundCodes = [];
-
-            const startBtn = document.getElementById('startBtn');
-            const btnText = document.getElementById('btnText');
-            startBtn.disabled = true;
-            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            loginBtn.disabled = true;
+            loginBtn.classList.add("opacity-50", "cursor-not-allowed");
+            loginBtnText.textContent = t("loggingIn");
+            showStatus(t("signingIn"));
 
             try {
-                showStatus(`🔍 กำลังค้นหาโค้ดของ ${email}...`, 'info');
+                await apiPost("/login", credentials);
+                hideAlerts();
+                setLoggedIn(credentials);
+            } catch (error) {
+                showStatus("❌ " + networkMessage(error), "error");
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                loginBtnText.textContent = t("login");
+            }
+        }
 
-                const response = await fetch(`${API_URL}/api/pull-code`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+        async function startPulling() {
+            if (isRunning || !session) return;
+            isRunning = true;
+            clearCodes();
+            const startBtn = document.getElementById("startBtn");
+            const btnText = document.getElementById("btnText");
+            startBtn.disabled = true;
+            startBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+            try {
+                showStatus(t("searchingCodes", { email: session.email }));
+                const list = await apiPost("/mails", {
+                    email: session.email,
+                    password: session.password,
+                    page: 1,
+                    limit: 50,
                 });
+                const threshold = Date.now() - MAX_MINUTES * 60 * 1000;
+                const found = [];
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = JSON.parse(line.slice(6));
-
-                            if (data.type === 'status') {
-                                showStatus(data.message, 'info');
-                            } else if (data.type === 'old_code') {
-                                const message = data.message;
-                                const codeMatch = message.match(/พบโค้ดเก่า:\s*(\d+)/);
-                                const timeMatch = message.match(/มาแล้ว\s+([^)]+)\)/);
-
-                                if (codeMatch && timeMatch) {
-                                    const oldCode = codeMatch[1];
-                                    const oldTime = timeMatch[1];
-                                    addCodeToDisplay(oldCode, `ผ่านไปแล้ว ${oldTime}`, false);
-                                }
-
-                                const waitingMsg = message.includes('กำลังรอโค้ดใหม่') ? '🔄 กำลังรอโค้ดใหม่...' : data.message;
-                                showStatus(waitingMsg, 'info');
-                            } else if (data.type === 'all_codes') {
-                                const codes = data.codes || [];
-                                codes.forEach(codeData => {
-                                    addCodeToDisplay(codeData.code, codeData.time, codeData.is_new);
-                                });
-                                document.getElementById('statusDisplay').classList.add('hidden');
-
-                                if (codes.length > 0) {
-                                    try { await navigator.clipboard.writeText(codes[0].code); } catch {}
-                                }
-
-                                isRunning = false;
-                                startBtn.disabled = false;
-                                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
-                                return;
-                            } else if (data.type === 'code') {
-                                addCodeToDisplay(data.code, data.time, data.is_new);
-                                document.getElementById('statusDisplay').classList.add('hidden');
-                                try { await navigator.clipboard.writeText(data.code); } catch {}
-                            } else if (data.type === 'complete') {
-                                document.getElementById('statusDisplay').classList.add('hidden');
-                                isRunning = false;
-                                startBtn.disabled = false;
-                                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
-                                return;
-                            } else if (data.type === 'error') {
-                                showStatus(data.message, 'error');
-                                isRunning = false;
-                                startBtn.disabled = false;
-                                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
-                                return;
-                            }
-                        }
+                for (const item of list.items || []) {
+                    const receivedAt = item.date ? new Date(item.date) : null;
+                    if (!receivedAt || Number.isNaN(receivedAt.getTime()) || receivedAt.getTime() < threshold) continue;
+                    const sender = item.sender || "";
+                    const subject = item.subject || "";
+                    let body = item.preview || "";
+                    if (!isRockstarMail(sender, subject, body)) continue;
+                    let code = extractOtp(`${subject} ${body}`);
+                    if (!code) {
+                        showStatus(t("readingMail", { subject: subject || t("noSubject") }));
+                        const mail = await apiPost("/mail", {
+                            email: session.email,
+                            password: session.password,
+                            message_id: String(item.id),
+                        });
+                        body = `${mail.html || ""} ${mail.text || ""} ${item.preview || ""}`;
+                        if (!isRockstarMail(sender, subject, body)) continue;
+                        code = extractOtp(`${subject} ${body}`);
                     }
+                    if (!code) continue;
+                    found.push({
+                        code,
+                        time: relativeTime(receivedAt),
+                        is_new: Date.now() - receivedAt.getTime() < 3 * 60 * 1000,
+                    });
                 }
 
+                if (!found.length) {
+                    showStatus(t("noCodes"));
+                    return;
+                }
+                found.forEach((item) => addCodeToDisplay(item.code, item.time, item.is_new));
+                document.getElementById("statusDisplay").classList.add("hidden");
+                try { await navigator.clipboard.writeText(found[0].code); } catch {}
             } catch (error) {
-                showStatus(`❌ เกิดข้อผิดพลาด: ${error.message}`, 'error');
+                showStatus("❌ " + t("errorPrefix", { error: networkMessage(error) }), "error");
             } finally {
                 isRunning = false;
                 startBtn.disabled = false;
-                startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                btnText.innerHTML = '🚀 เริ่มดึงโค้ด';
+                startBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                btnText.textContent = t("pullCodes");
             }
         }
+
+        applyLanguage();
     </script>
 </body>
 </html>

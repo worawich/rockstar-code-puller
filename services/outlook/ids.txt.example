@@ -1,0 +1,7 @@
+# รูปแบบเดียวกับ wichxshop-webmain/services/outlook/ids.txt
+# หนึ่งบรรทัดต่อหนึ่งเมล: email|password|refresh_token|client_id
+#
+# password ในไฟล์นี้ใช้ตรวจสิทธิ์หน้าเว็บเท่านั้น
+# การอ่านเมลจริงใช้ refresh_token + client_id ผ่าน Microsoft Graph
+#
+# example@hotmail.com|YourLocalPassword|0.AXoA-refresh-token-here|9e5f94bc-e8a4-4e73-b8be-63364c29d753

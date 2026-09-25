@@ -1,0 +1,11 @@
+[project]
+name = "outlook"
+version = "0.1.0"
+description = "Outlook login + Rockstar OTP service"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "pydantic[email]>=2.10.0",
+    "requests>=2.32.0",
+    "uvicorn>=0.34.0",
+]

@@ -1,0 +1,10 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+services/outlook/ids.txt
+services/outlook/.venv/
+.idea/
+.vscode/
