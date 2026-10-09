@@ -72,6 +72,23 @@
                     </div>
                 </div>
 
+                <div class="border-b border-gray-700 bg-gray-900/40 p-6 space-y-3">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-purple-200">
+                        <span>📨</span>
+                        <span data-i18n="backupTitle">Fetch backup mail OTP</span>
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <input type="email" id="backupEmail" readonly
+                            class="w-full sm:flex-1 px-4 py-3 bg-gray-700/40 border border-gray-600 rounded-lg text-gray-300 outline-none">
+                        <button onclick="fetchBackupOtp()" id="backupBtn"
+                            class="shrink-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-3 rounded-lg font-bold transition-all"
+                            data-i18n="backupButton">
+                            Fetch backup OTP
+                        </button>
+                    </div>
+                    <div id="backupResult" class="hidden rounded-lg border border-purple-500/30 bg-gray-800/60 p-4"></div>
+                </div>
+
                 <div id="inboxView" class="p-6 space-y-4">
                     <div class="overflow-x-auto rounded-xl border border-gray-700">
                         <table class="w-full text-left text-sm">
@@ -140,6 +157,7 @@
             ? "/api"
             : "http://141.98.17.64:8001";
         const PAGE_SIZE = 20;
+        const BACKUP_MAIL_DOMAIN = "jas.dangvideo.lol";
 
         const I18N = {
             en: {
@@ -178,6 +196,17 @@
                 loadingInbox: "Loading inbox...",
                 noContent: "No content",
                 readFailed: "Could not read this message: {error}",
+                backupTitle: "Fetch backup mail OTP",
+                backupButton: "Fetch backup OTP",
+                backupFetching: "Fetching...",
+                backupLatest: "Latest OTP",
+                backupTime: "Time",
+                backupCopy: "Copy",
+                backupCopied: "Copied",
+                backupCopyFailed: "Copy failed",
+                backupWaiting: "No OTP yet. Please wait 5-15 seconds and try again.",
+                backupNoLocalPart: "No email name found for the backup mail",
+                backupFailed: "Could not fetch backup mail OTP",
             },
             th: {
                 title: "อ่านเมล Outlook / Hotmail",
@@ -215,6 +244,17 @@
                 loadingInbox: "กำลังโหลดกล่องจดหมาย...",
                 noContent: "ไม่มีเนื้อหา",
                 readFailed: "อ่านเมลไม่สำเร็จ: {error}",
+                backupTitle: "ดึง OTP เมลสำรอง",
+                backupButton: "ดึง OTP เมลสำรอง",
+                backupFetching: "กำลังดึง...",
+                backupLatest: "OTP ล่าสุด",
+                backupTime: "เวลา",
+                backupCopy: "คัดลอก",
+                backupCopied: "คัดลอกแล้ว",
+                backupCopyFailed: "คัดลอกไม่สำเร็จ",
+                backupWaiting: "ยังไม่พบ OTP โปรดรอ 5-15 วินาทีแล้วลองใหม่อีกครั้ง",
+                backupNoLocalPart: "ไม่พบชื่ออีเมลสำหรับเมลสำรอง",
+                backupFailed: "ดึง OTP เมลสำรองไม่สำเร็จ",
             },
         };
 
@@ -225,6 +265,8 @@
         let mailTotal = 0;
         let inboxLoading = false;
         let lastViewerItem = null;
+        let backupResult = null;
+        let backupLoading = false;
 
         function t(key, vars) {
             let text = I18N[lang][key] ?? I18N.en[key] ?? key;
@@ -250,7 +292,11 @@
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold " + (lang === "th" ? "bg-purple-600" : "text-gray-300");
             if (session) {
                 renderMailList();
+                renderBackupResult();
                 if (lastViewerItem) fillViewerHeader(lastViewerItem);
+            }
+            if (backupLoading) {
+                document.getElementById("backupBtn").textContent = t("backupFetching");
             }
             if (!document.getElementById("loginBtn").disabled) {
                 document.getElementById("loginBtnText").textContent = t("login");
@@ -330,6 +376,11 @@
             document.getElementById("loginPanel").classList.add("hidden");
             document.getElementById("appPanel").classList.remove("hidden");
             document.getElementById("loggedEmail").textContent = credentials.email;
+            document.getElementById("backupEmail").value = backupLocalPart()
+                ? `${backupLocalPart()}@${BACKUP_MAIL_DOMAIN}`
+                : "";
+            backupResult = null;
+            renderBackupResult();
             refreshInbox();
         }
 
@@ -339,6 +390,8 @@
             mailItems = [];
             mailTotal = 0;
             lastViewerItem = null;
+            backupResult = null;
+            renderBackupResult();
             document.getElementById("loginPanel").classList.remove("hidden");
             document.getElementById("appPanel").classList.add("hidden");
             closeMail();
@@ -417,6 +470,95 @@
 
         function loadMoreMails() {
             return loadMails(mailPage + 1, true);
+        }
+
+        function backupLocalPart() {
+            return session ? (session.email.split("@")[0] || "").trim() : "";
+        }
+
+        function formatBackupTime(value) {
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? value : formatDate(value);
+        }
+
+        function renderBackupResult() {
+            const box = document.getElementById("backupResult");
+            if (!backupResult) {
+                box.classList.add("hidden");
+                box.innerHTML = "";
+                return;
+            }
+            box.classList.remove("hidden");
+            if (!backupResult.otp) {
+                box.innerHTML = `<p class="text-sm text-gray-300">${escapeHtml(t("backupWaiting"))}</p>`;
+                return;
+            }
+            box.innerHTML = `
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs text-gray-400">${escapeHtml(t("backupLatest"))}</p>
+                        <p class="font-mono text-2xl font-bold tracking-widest text-green-300">${escapeHtml(backupResult.otp)}</p>
+                        ${backupResult.received_at
+                            ? `<p class="text-xs text-gray-400">${escapeHtml(t("backupTime"))}: ${escapeHtml(formatBackupTime(backupResult.received_at))}</p>`
+                            : ""}
+                    </div>
+                    <button type="button" id="backupCopyBtn" onclick="copyBackupOtp()"
+                        class="shrink-0 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold">
+                        ${escapeHtml(t("backupCopy"))}
+                    </button>
+                </div>`;
+        }
+
+        async function fetchBackupOtp() {
+            if (backupLoading) return;
+            const localPart = backupLocalPart();
+            if (!localPart) {
+                showStatus("❌ " + t("backupNoLocalPart"), "error");
+                return;
+            }
+
+            const backupBtn = document.getElementById("backupBtn");
+            backupLoading = true;
+            backupBtn.disabled = true;
+            backupBtn.classList.add("opacity-50", "cursor-not-allowed");
+            backupBtn.textContent = t("backupFetching");
+
+            try {
+                const response = await fetch(`${API_URL}/backup-otp`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ local_part: localPart }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(typeof data.detail === "string" && data.detail ? data.detail : t("backupFailed"));
+                }
+                backupResult = data;
+                renderBackupResult();
+                hideAlerts();
+            } catch (error) {
+                showStatus("❌ " + networkMessage(error), "error");
+            } finally {
+                backupLoading = false;
+                backupBtn.disabled = false;
+                backupBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                backupBtn.textContent = t("backupButton");
+            }
+        }
+
+        async function copyBackupOtp() {
+            if (!backupResult?.otp) return;
+            const button = document.getElementById("backupCopyBtn");
+            try {
+                await navigator.clipboard.writeText(backupResult.otp);
+                button.textContent = t("backupCopied");
+                setTimeout(() => {
+                    const current = document.getElementById("backupCopyBtn");
+                    if (current) current.textContent = t("backupCopy");
+                }, 2000);
+            } catch {
+                showStatus("❌ " + t("backupCopyFailed"), "error");
+            }
         }
 
         function closeMail() {
