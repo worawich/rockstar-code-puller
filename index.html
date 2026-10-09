@@ -158,9 +158,7 @@
             : "http://141.98.17.64:8001";
         const PAGE_SIZE = 20;
         const BACKUP_MAIL_DOMAIN = "jas.dangvideo.lol";
-        const BACKUP_OTP_URL = (location.protocol === "https:" && /^(www\.)?okzc\.xyz$/i.test(location.hostname))
-            ? "/api/backup-otp"
-            : "https://okzc.xyz/api/backup-otp";
+        const BACKUP_OTP_WORKER_URL = "https://cold-morning-1f6f.huybqps10328.workers.dev/";
 
         const I18N = {
             en: {
@@ -201,15 +199,9 @@
                 readFailed: "Could not read this message: {error}",
                 backupTitle: "Fetch backup mail OTP",
                 backupButton: "Fetch backup OTP",
-                backupFetching: "Fetching...",
-                backupLatest: "Latest OTP",
-                backupTime: "Time",
-                backupCopy: "Copy",
-                backupCopied: "Copied",
-                backupCopyFailed: "Copy failed",
-                backupWaiting: "No OTP yet. Please wait 5-15 seconds and try again.",
+                backupWaiting: "No OTP yet? Wait 5-15 seconds and press the button again.",
+                backupOpenTab: "Open in new tab",
                 backupNoLocalPart: "No email name found for the backup mail",
-                backupFailed: "Could not fetch backup mail OTP",
             },
             th: {
                 title: "อ่านเมล Outlook / Hotmail",
@@ -249,15 +241,9 @@
                 readFailed: "อ่านเมลไม่สำเร็จ: {error}",
                 backupTitle: "ดึง OTP เมลสำรอง",
                 backupButton: "ดึง OTP เมลสำรอง",
-                backupFetching: "กำลังดึง...",
-                backupLatest: "OTP ล่าสุด",
-                backupTime: "เวลา",
-                backupCopy: "คัดลอก",
-                backupCopied: "คัดลอกแล้ว",
-                backupCopyFailed: "คัดลอกไม่สำเร็จ",
-                backupWaiting: "ยังไม่พบ OTP โปรดรอ 5-15 วินาทีแล้วลองใหม่อีกครั้ง",
+                backupWaiting: "ยังไม่พบ OTP? รอ 5-15 วินาทีแล้วกดปุ่มอีกครั้ง",
+                backupOpenTab: "เปิดในแท็บใหม่",
                 backupNoLocalPart: "ไม่พบชื่ออีเมลสำหรับเมลสำรอง",
-                backupFailed: "ดึง OTP เมลสำรองไม่สำเร็จ",
             },
         };
 
@@ -269,7 +255,6 @@
         let inboxLoading = false;
         let lastViewerItem = null;
         let backupResult = null;
-        let backupLoading = false;
 
         function t(key, vars) {
             let text = I18N[lang][key] ?? I18N.en[key] ?? key;
@@ -297,11 +282,7 @@
                 renderMailList();
                 renderBackupResult();
                 if (lastViewerItem) fillViewerHeader(lastViewerItem);
-            }
-            if (backupLoading) {
-                document.getElementById("backupBtn").textContent = t("backupFetching");
-            }
-            if (!document.getElementById("loginBtn").disabled) {
+            }            if (!document.getElementById("loginBtn").disabled) {
                 document.getElementById("loginBtnText").textContent = t("login");
             }
         }
@@ -479,9 +460,9 @@
             return session ? (session.email.split("@")[0] || "").trim() : "";
         }
 
-        function formatBackupTime(value) {
-            const date = new Date(value);
-            return Number.isNaN(date.getTime()) ? value : formatDate(value);
+        function backupOtpUrl() {
+            const email = `${backupLocalPart()}@${BACKUP_MAIL_DOMAIN}`;
+            return `${BACKUP_OTP_WORKER_URL}?email=${encodeURIComponent(email)}&t=${Date.now()}`;
         }
 
         function renderBackupResult() {
@@ -496,82 +477,23 @@
                 box.innerHTML = `<p class="text-sm text-red-300">❌ ${escapeHtml(backupResult.error)}</p>`;
                 return;
             }
-            if (!backupResult.otp) {
-                box.innerHTML = `<p class="text-sm text-gray-300">${escapeHtml(t("backupWaiting"))}</p>`;
-                return;
-            }
             box.innerHTML = `
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs text-gray-400">${escapeHtml(t("backupLatest"))}</p>
-                        <p class="font-mono text-2xl font-bold tracking-widest text-green-300">${escapeHtml(backupResult.otp)}</p>
-                        ${backupResult.receivedAt
-                            ? `<p class="text-xs text-gray-400">${escapeHtml(t("backupTime"))}: ${escapeHtml(formatBackupTime(backupResult.receivedAt))}</p>`
-                            : ""}
-                    </div>
-                    <button type="button" id="backupCopyBtn" onclick="copyBackupOtp()"
-                        class="shrink-0 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold">
-                        ${escapeHtml(t("backupCopy"))}
-                    </button>
+                <iframe src="${escapeHtml(backupResult.url)}" title="Backup OTP"
+                    class="w-full h-20 rounded-md bg-white"></iframe>
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
+                    <span>${escapeHtml(t("backupWaiting"))}</span>
+                    <a href="${escapeHtml(backupResult.url)}" target="_blank" rel="noopener"
+                        class="font-semibold text-purple-300 hover:text-purple-200 underline">${escapeHtml(t("backupOpenTab"))}</a>
                 </div>`;
         }
 
-        async function fetchBackupOtp() {
-            if (backupLoading) return;
-            const localPart = backupLocalPart();
-            if (!localPart) {
+        function fetchBackupOtp() {
+            if (!backupLocalPart()) {
                 backupResult = { error: t("backupNoLocalPart") };
-                renderBackupResult();
-                return;
+            } else {
+                backupResult = { url: backupOtpUrl() };
             }
-
-            const backupBtn = document.getElementById("backupBtn");
-            backupLoading = true;
-            backupBtn.disabled = true;
-            backupBtn.classList.add("opacity-50", "cursor-not-allowed");
-            backupBtn.textContent = t("backupFetching");
-
-            try {
-                const response = await fetch(`${BACKUP_OTP_URL}?localPart=${encodeURIComponent(localPart)}`, {
-                    cache: "no-store",
-                });
-                const raw = await response.text();
-                let data = {};
-                try {
-                    data = JSON.parse(raw);
-                } catch {
-                    data = {};
-                }
-                if (!response.ok) {
-                    const reason = [data.message, data.detail].find((value) => typeof value === "string" && value)
-                        || raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
-                    throw new Error(`HTTP ${response.status}${reason ? ` - ${reason}` : ""}`);
-                }
-                backupResult = data;
-            } catch (error) {
-                backupResult = { error: `${t("backupFailed")}: ${networkMessage(error)}` };
-            } finally {
-                renderBackupResult();
-                backupLoading = false;
-                backupBtn.disabled = false;
-                backupBtn.classList.remove("opacity-50", "cursor-not-allowed");
-                backupBtn.textContent = t("backupButton");
-            }
-        }
-
-        async function copyBackupOtp() {
-            if (!backupResult?.otp) return;
-            const button = document.getElementById("backupCopyBtn");
-            try {
-                await navigator.clipboard.writeText(backupResult.otp);
-                button.textContent = t("backupCopied");
-                setTimeout(() => {
-                    const current = document.getElementById("backupCopyBtn");
-                    if (current) current.textContent = t("backupCopy");
-                }, 2000);
-            } catch {
-                showStatus("❌ " + t("backupCopyFailed"), "error");
-            }
+            renderBackupResult();
         }
 
         function closeMail() {
