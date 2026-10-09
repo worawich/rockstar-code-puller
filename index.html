@@ -209,11 +209,6 @@
                 backupWaiting: "No OTP yet? Wait 5-15 seconds and press the button again.",
                 backupFetching: "Fetching OTP...",
                 backupUnreachable: "Could not fetch the OTP. Please try again.",
-                backupLatest: "Latest OTP",
-                backupTime: "Time",
-                backupCopy: "Copy",
-                backupCopied: "Copied",
-                backupCopyFailed: "Copy failed",
                 backupOpenTab: "Open in new tab",
                 backupNoLocalPart: "No email name found for the backup mail",
             },
@@ -258,11 +253,6 @@
                 backupWaiting: "ยังไม่พบ OTP? รอ 5-15 วินาทีแล้วกดปุ่มอีกครั้ง",
                 backupFetching: "กำลังดึง OTP...",
                 backupUnreachable: "ดึง OTP ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
-                backupLatest: "OTP ล่าสุด",
-                backupTime: "เวลา",
-                backupCopy: "คัดลอก",
-                backupCopied: "คัดลอกแล้ว",
-                backupCopyFailed: "คัดลอกไม่สำเร็จ",
                 backupOpenTab: "เปิดในแท็บใหม่",
                 backupNoLocalPart: "ไม่พบชื่ออีเมลสำหรับเมลสำรอง",
             },
@@ -503,23 +493,7 @@
                 return;
             }
             if (backupResult.otp) {
-                box.innerHTML = `
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-xs text-gray-400">${escapeHtml(t("backupLatest"))}</p>
-                            <p class="font-mono text-3xl font-bold tracking-[0.3em] text-green-300">${escapeHtml(backupResult.otp)}</p>
-                            ${backupResult.timestamp
-                                ? `<p class="text-xs text-gray-400 mt-1">${escapeHtml(t("backupTime"))}: ${escapeHtml(formatDate(backupResult.timestamp))}</p>`
-                                : ""}
-                            ${backupResult.subject
-                                ? `<p class="text-xs text-gray-500 truncate">${escapeHtml(backupResult.subject)}</p>`
-                                : ""}
-                        </div>
-                        <button type="button" id="backupCopyBtn" onclick="copyBackupOtp()"
-                            class="shrink-0 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold">
-                            ${escapeHtml(t("backupCopy"))}
-                        </button>
-                    </div>`;
+                box.innerHTML = `<p class="text-center font-mono text-4xl font-bold tracking-[0.3em] text-green-300 select-all">${escapeHtml(backupResult.otp)}</p>`;
                 return;
             }
             if (backupResult.waiting) {
@@ -567,26 +541,9 @@
             } else {
                 const detail = data.data && typeof data.data === "object" ? data.data : data;
                 const otp = detail.otp ?? detail.code ?? null;
-                backupResult = otp
-                    ? { otp: String(otp), timestamp: detail.timestamp || detail.receivedAt || null, subject: detail.subject || "" }
-                    : { waiting: true };
+                backupResult = otp ? { otp: String(otp) } : { waiting: true };
             }
             renderBackupResult();
-        }
-
-        async function copyBackupOtp() {
-            if (!backupResult?.otp) return;
-            const button = document.getElementById("backupCopyBtn");
-            try {
-                await navigator.clipboard.writeText(backupResult.otp);
-                button.textContent = t("backupCopied");
-            } catch {
-                button.textContent = t("backupCopyFailed");
-            }
-            setTimeout(() => {
-                const current = document.getElementById("backupCopyBtn");
-                if (current) current.textContent = t("backupCopy");
-            }, 2000);
         }
 
         function closeMail() {
