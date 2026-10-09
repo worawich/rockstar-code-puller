@@ -18,10 +18,6 @@ IDS_FILE = Path(__file__).parent / "ids.txt"
 TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 GRAPH_API_URL = "https://graph.microsoft.com/v1.0"
 DONGVAN_URL = "https://tools.dongvanfb.net/api/get_messages_oauth2"
-BACKUP_OTP_WORKER_URL = "https://cold-morning-1f6f.huybqps10328.workers.dev/"
-BACKUP_MAIL_DOMAIN = "jas.dangvideo.lol"
-BACKUP_LOCAL_PART_REGEX = re.compile(r"^[A-Za-z0-9._+-]+$")
-
 OTP_REGEX = re.compile(
     r"\b(?!000000|111111|222222|333333|444444|555555|666666|777777|888888|999999)\d{6}\b"
 )
@@ -60,9 +56,6 @@ class LoginResponse(BaseModel):
 class PullCodeRequest(LoginRequest):
     pass
 
-
-class BackupOtpRequest(BaseModel):
-    local_part: str = Field(min_length=1, max_length=64)
 
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -364,63 +357,6 @@ async def pull_code(request: PullCodeRequest) -> StreamingResponse:
             yield sse({"type": "error", "message": "ไม่สามารถดึงโค้ดได้ กรุณาลองใหม่"})
 
     return StreamingResponse(stream(), media_type="text/event-stream")
-
-
-def _as_string(value: object) -> str | None:
-    if isinstance(value, str) and value.strip():
-        return value.strip()
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return str(value)
-    return None
-
-
-@app.post("/backup-otp")
-async def backup_otp(request: BackupOtpRequest) -> dict[str, str | None]:
-    local_part = request.local_part.strip()
-    if not BACKUP_LOCAL_PART_REGEX.fullmatch(local_part):
-        raise HTTPException(status_code=400, detail="Invalid email name")
-
-    try:
-        resp = requests.get(
-            BACKUP_OTP_WORKER_URL,
-            params={"email": f"{local_part}@{BACKUP_MAIL_DOMAIN}"},
-            headers={"Accept": "application/json"},
-            timeout=30,
-        )
-    except requests.RequestException:
-        raise HTTPException(status_code=502, detail="Backup mail server unreachable")
-
-    raw = resp.text
-    try:
-        parsed = resp.json()
-    except ValueError:
-        parsed = None
-    if not isinstance(parsed, dict):
-        parsed = {}
-
-    if not resp.ok:
-        raise HTTPException(
-            status_code=502,
-            detail=_as_string(parsed.get("message")) or f"Backup mail error ({resp.status_code})",
-        )
-
-    otp = (
-        _as_string(parsed.get("otp"))
-        or _as_string(parsed.get("code"))
-        or _as_string(parsed.get("data"))
-    )
-    if not otp:
-        match = re.search(r"\b\d{4,8}\b", raw)
-        otp = match.group(0) if match else None
-
-    return {
-        "status": _as_string(parsed.get("status")) or ("success" if otp else "waiting"),
-        "otp": otp,
-        "message": _as_string(parsed.get("message")),
-        "received_at": _as_string(parsed.get("receivedAt"))
-        or _as_string(parsed.get("time"))
-        or _as_string(parsed.get("date")),
-    }
 
 
 @app.get("/health")

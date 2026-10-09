@@ -158,6 +158,9 @@
             : "http://141.98.17.64:8001";
         const PAGE_SIZE = 20;
         const BACKUP_MAIL_DOMAIN = "jas.dangvideo.lol";
+        const BACKUP_OTP_URL = (location.protocol === "https:" && /^(www\.)?okzc\.xyz$/i.test(location.hostname))
+            ? "/api/backup-otp"
+            : "https://okzc.xyz/api/backup-otp";
 
         const I18N = {
             en: {
@@ -489,6 +492,10 @@
                 return;
             }
             box.classList.remove("hidden");
+            if (backupResult.error) {
+                box.innerHTML = `<p class="text-sm text-red-300">❌ ${escapeHtml(backupResult.error)}</p>`;
+                return;
+            }
             if (!backupResult.otp) {
                 box.innerHTML = `<p class="text-sm text-gray-300">${escapeHtml(t("backupWaiting"))}</p>`;
                 return;
@@ -498,8 +505,8 @@
                     <div>
                         <p class="text-xs text-gray-400">${escapeHtml(t("backupLatest"))}</p>
                         <p class="font-mono text-2xl font-bold tracking-widest text-green-300">${escapeHtml(backupResult.otp)}</p>
-                        ${backupResult.received_at
-                            ? `<p class="text-xs text-gray-400">${escapeHtml(t("backupTime"))}: ${escapeHtml(formatBackupTime(backupResult.received_at))}</p>`
+                        ${backupResult.receivedAt
+                            ? `<p class="text-xs text-gray-400">${escapeHtml(t("backupTime"))}: ${escapeHtml(formatBackupTime(backupResult.receivedAt))}</p>`
                             : ""}
                     </div>
                     <button type="button" id="backupCopyBtn" onclick="copyBackupOtp()"
@@ -513,7 +520,8 @@
             if (backupLoading) return;
             const localPart = backupLocalPart();
             if (!localPart) {
-                showStatus("❌ " + t("backupNoLocalPart"), "error");
+                backupResult = { error: t("backupNoLocalPart") };
+                renderBackupResult();
                 return;
             }
 
@@ -524,21 +532,18 @@
             backupBtn.textContent = t("backupFetching");
 
             try {
-                const response = await fetch(`${API_URL}/backup-otp`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ local_part: localPart }),
+                const response = await fetch(`${BACKUP_OTP_URL}?localPart=${encodeURIComponent(localPart)}`, {
+                    cache: "no-store",
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
-                    throw new Error(typeof data.detail === "string" && data.detail ? data.detail : t("backupFailed"));
+                    throw new Error(typeof data.message === "string" && data.message ? data.message : t("backupFailed"));
                 }
                 backupResult = data;
-                renderBackupResult();
-                hideAlerts();
             } catch (error) {
-                showStatus("❌ " + networkMessage(error), "error");
+                backupResult = { error: `${t("backupFailed")}: ${networkMessage(error)}` };
             } finally {
+                renderBackupResult();
                 backupLoading = false;
                 backupBtn.disabled = false;
                 backupBtn.classList.remove("opacity-50", "cursor-not-allowed");
