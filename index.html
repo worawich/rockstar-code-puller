@@ -535,9 +535,17 @@
                 const response = await fetch(`${BACKUP_OTP_URL}?localPart=${encodeURIComponent(localPart)}`, {
                     cache: "no-store",
                 });
-                const data = await response.json().catch(() => ({}));
+                const raw = await response.text();
+                let data = {};
+                try {
+                    data = JSON.parse(raw);
+                } catch {
+                    data = {};
+                }
                 if (!response.ok) {
-                    throw new Error(typeof data.message === "string" && data.message ? data.message : t("backupFailed"));
+                    const reason = [data.message, data.detail].find((value) => typeof value === "string" && value)
+                        || raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
+                    throw new Error(`HTTP ${response.status}${reason ? ` - ${reason}` : ""}`);
                 }
                 backupResult = data;
             } catch (error) {
