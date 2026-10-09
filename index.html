@@ -159,8 +159,9 @@
         const PAGE_SIZE = 20;
         const BACKUP_MAIL_DOMAIN = "jas.dangvideo.lol";
         const BACKUP_OTP_WORKER_URL = "https://cold-morning-1f6f.huybqps10328.workers.dev/";
+        const BACKUP_PROXY_URL = "";
         const BACKUP_CORS_PROXIES = [
-            (url) => url,
+            (url) => BACKUP_PROXY_URL && `${BACKUP_PROXY_URL}?email=${encodeURIComponent(new URL(url).searchParams.get("email"))}`,
             (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
             (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
             (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
@@ -207,6 +208,7 @@
                 backupButton: "Fetch backup OTP",
                 backupWaiting: "No OTP yet? Wait 5-15 seconds and press the button again.",
                 backupFetching: "Fetching OTP...",
+                backupUnreachable: "Could not fetch the OTP. Please try again.",
                 backupLatest: "Latest OTP",
                 backupTime: "Time",
                 backupCopy: "Copy",
@@ -255,6 +257,7 @@
                 backupButton: "ดึง OTP เมลสำรอง",
                 backupWaiting: "ยังไม่พบ OTP? รอ 5-15 วินาทีแล้วกดปุ่มอีกครั้ง",
                 backupFetching: "กำลังดึง OTP...",
+                backupUnreachable: "ดึง OTP ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
                 backupLatest: "OTP ล่าสุด",
                 backupTime: "เวลา",
                 backupCopy: "คัดลอก",
@@ -524,10 +527,8 @@
                 return;
             }
             box.innerHTML = `
-                <iframe src="${escapeHtml(backupResult.url)}" title="Backup OTP"
-                    class="w-full h-20 rounded-md bg-white"></iframe>
-                <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
-                    <span>${escapeHtml(t("backupWaiting"))}</span>
+                <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <span class="text-red-300">❌ ${escapeHtml(t("backupUnreachable"))}</span>
                     <a href="${escapeHtml(backupResult.url)}" target="_blank" rel="noopener"
                         class="font-semibold text-purple-300 hover:text-purple-200 underline">${escapeHtml(t("backupOpenTab"))}</a>
                 </div>`;
@@ -535,8 +536,10 @@
 
         async function requestBackupJson(url) {
             for (const proxy of BACKUP_CORS_PROXIES) {
+                const target = proxy(url);
+                if (!target) continue;
                 try {
-                    const response = await fetch(proxy(url), { cache: "no-store" });
+                    const response = await fetch(target, { cache: "no-store" });
                     if (!response.ok) continue;
                     return await response.json();
                 } catch {
